@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 const intakeSources = [
@@ -48,8 +49,9 @@ export default async function HomePage() {
           ) : (
             <div style={{ display: 'grid', gap: 12 }}>
               {workItems.map((item) => (
-                <div
+                <Link
                   key={item.id}
+                  href={`/work-items/${item.id}`}
                   style={{ padding: 14, border: '1px solid #22304d', borderRadius: 12, background: '#0f172a' }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
@@ -60,7 +62,7 @@ export default async function HomePage() {
                   <div style={{ color: '#cbd5e1', marginTop: 6 }}>
                     {item.customer ?? 'Unknown customer'} · {item.domain ?? 'Unknown domain'}
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}

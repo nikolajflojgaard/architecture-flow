@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../services/database.service';
 
 type ListWorkItemsOptions = {
@@ -8,7 +8,7 @@ type ListWorkItemsOptions = {
 
 @Injectable()
 export class WorkItemsService {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(@Inject(DatabaseService) private readonly databaseService: DatabaseService) {}
 
   async listWorkItems(options: ListWorkItemsOptions) {
     const limit = Math.min(Math.max(options.limit, 1), 100);
@@ -48,6 +48,35 @@ export class WorkItemsService {
     return {
       items: result.rows,
       count: result.rowCount,
+    };
+  }
+
+  async getWorkItem(id: string) {
+    const result = await this.databaseService.query(
+      `
+        select
+          id,
+          title,
+          source_type as "sourceType",
+          source_folder as "sourceFolder",
+          source_file_id as "sourceFileId",
+          source_link as "sourceLink",
+          customer,
+          domain,
+          workflow_status as status,
+          priority,
+          assigned_to as "assignedTo",
+          created_at as "createdAt",
+          updated_at as "updatedAt"
+        from work_items
+        where id = $1
+        limit 1
+      `,
+      [id],
+    );
+
+    return {
+      item: result.rows[0] ?? null,
     };
   }
 }

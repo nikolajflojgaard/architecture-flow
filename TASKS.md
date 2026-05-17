@@ -66,7 +66,7 @@ Legend:
 ## 6. Work item UI
 
 - [~] Inbox page
-- [ ] Work item detail page
+- [~] Work item detail page
 - [ ] Pipeline board
 - [ ] Artifact list/view
 - [ ] Audit trail view
