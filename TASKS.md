@@ -32,6 +32,13 @@ Legend:
 - [x] Add environment variable strategy
 - [x] Add local dev startup instructions
 
+## 2b. API foundation
+
+- [x] Replace API bootstrap with NestJS structure
+- [x] Add first DB-backed read endpoint for `work_items`
+- [ ] Add migrations/startup flow
+- [ ] Add seed/dev fixture path
+
 ## 3. Data model
 
 - [x] Define `work_items`
@@ -104,10 +111,9 @@ Legend:
 
 Build next in this order:
 
-1. replace API bootstrap with proper NestJS structure
-2. wire DB access into API + worker
+1. connect UI inbox/work-item shell to live API data
+2. add DB migration + seed flow
 3. auth shell
-4. inbox/work-item UI shell with live DB data
-5. Drive ingestion into DB
-6. PDF artifact flow
-7. BPMN integration
+4. Drive ingestion into DB
+5. PDF artifact flow
+6. BPMN integration
