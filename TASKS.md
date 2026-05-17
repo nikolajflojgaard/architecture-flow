@@ -18,29 +18,29 @@ Legend:
 
 ## 1. Repo scaffold
 
-- [ ] Create monorepo structure
-- [ ] Add `apps/web`
-- [ ] Add `apps/api`
-- [ ] Add `apps/worker`
-- [ ] Add shared packages structure
-- [ ] Add Docker/dev environment
+- [x] Create monorepo structure
+- [x] Add `apps/web`
+- [x] Add `apps/api`
+- [x] Add `apps/worker`
+- [x] Add shared packages structure
+- [x] Add Docker/dev environment
 
 ## 2. Core technical foundation
 
-- [ ] Choose package manager / workspace tooling
+- [x] Choose package manager / workspace tooling
 - [ ] Add linting / formatting / typechecking baseline
-- [ ] Add environment variable strategy
-- [ ] Add local dev startup instructions
+- [x] Add environment variable strategy
+- [x] Add local dev startup instructions
 
 ## 3. Data model
 
-- [ ] Define `work_items`
-- [ ] Define `artifacts`
-- [ ] Define `workflow_runs`
-- [ ] Define `tasks`
-- [ ] Define `comments`
-- [ ] Define `audit_events`
-- [ ] Create first migration set
+- [x] Define `work_items`
+- [x] Define `artifacts`
+- [x] Define `workflow_runs`
+- [x] Define `tasks`
+- [x] Define `comments`
+- [x] Define `audit_events`
+- [x] Create first migration set
 
 ## 4. Auth
 
@@ -104,10 +104,10 @@ Legend:
 
 Build next in this order:
 
-1. monorepo scaffold
-2. DB schema
+1. replace API bootstrap with proper NestJS structure
+2. wire DB access into API + worker
 3. auth shell
-4. inbox/work-item UI shell
+4. inbox/work-item UI shell with live DB data
 5. Drive ingestion into DB
 6. PDF artifact flow
 7. BPMN integration

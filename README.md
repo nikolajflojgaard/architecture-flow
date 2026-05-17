@@ -48,10 +48,25 @@ Recommended stack:
 - **Object storage:** MinIO
 - **AI orchestration:** OpenClaw
 
+## Repo structure
+
+```txt
+apps/
+  web/
+  api/
+  worker/
+packages/
+  db/
+  shared/
+docs/
+docker-compose.yml
+```
+
 ## Docs
 
 - `docs/architecture-flow-v1.md`
 - `docs/architecture-flow-product-spec.md`
+- `docs/development-bootstrap.md`
 - `TASKS.md`
 
 ## Working principles
@@ -71,4 +86,13 @@ This repo currently holds:
 - v1 product spec
 - task tracking
 
-Next step is to turn that into a runnable repo scaffold.
+## Bootstrap status
+
+The repo now includes:
+
+- monorepo scaffold
+- app shells
+- initial database schema
+- local dev infra starter
+
+Next step is to wire the first real vertical slice through DB + UI + intake.
