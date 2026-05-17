@@ -75,7 +75,17 @@ importers:
         version: 5.9.3
 
   apps/worker:
+    dependencies:
+      pg:
+        specifier: ^8.16.0
+        version: 8.20.0
     devDependencies:
+      '@types/node':
+        specifier: ^22.15.17
+        version: 22.19.19
+      '@types/pg':
+        specifier: ^8.15.2
+        version: 8.20.0
       tsx:
         specifier: ^4.19.4
         version: 4.22.1

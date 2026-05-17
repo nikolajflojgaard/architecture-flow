@@ -37,6 +37,53 @@ const items = [
   },
 ];
 
+const intakeSources = [
+  {
+    sourceKey: 'general-designs',
+    sourceType: 'google-drive-folder',
+    displayName: 'General designs',
+    driveRootName: 'Data - NET',
+    driveFolderPath: 'General designs',
+    driveFolderId: '1jfj6EqzSsUsyA2_cz6ui2PeObZaTyanD',
+  },
+  {
+    sourceKey: 'api-spec-drop-yaml',
+    sourceType: 'google-drive-folder',
+    displayName: 'API spec drop/YAML',
+    driveRootName: 'Data - NET',
+    driveFolderPath: 'API spec drop/YAML',
+    driveFolderId: '1iByXnVBDwuXwV34vdXD387oM2-zezN-K',
+  },
+];
+
+for (const source of intakeSources) {
+  await pool.query(
+    `
+      insert into intake_sources (
+        id, source_key, source_type, display_name, drive_root_name, drive_folder_path, drive_folder_id
+      )
+      values ($1,$2,$3,$4,$5,$6,$7)
+      on conflict (source_key)
+      do update set
+        source_type = excluded.source_type,
+        display_name = excluded.display_name,
+        drive_root_name = excluded.drive_root_name,
+        drive_folder_path = excluded.drive_folder_path,
+        drive_folder_id = excluded.drive_folder_id,
+        updated_at = now()
+    `,
+    [
+      crypto.randomUUID(),
+      source.sourceKey,
+      source.sourceType,
+      source.displayName,
+      source.driveRootName,
+      source.driveFolderPath,
+      source.driveFolderId,
+    ],
+  );
+}
+
 for (const item of items) {
   await pool.query(
     `
@@ -62,5 +109,5 @@ for (const item of items) {
   );
 }
 
-console.log(`seeded ${items.length} work item(s)`);
+console.log(`seeded ${items.length} work item(s) and ${intakeSources.length} intake source(s)`);
 await pool.end();

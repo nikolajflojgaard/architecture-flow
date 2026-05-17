@@ -57,11 +57,11 @@ Legend:
 
 ## 5. Drive intake
 
-- [ ] Model watched folders in app config
-- [ ] Ingest `General designs`
-- [ ] Ingest `API spec drop/YAML`
-- [ ] Prevent duplicate re-ingestion
-- [ ] Persist intake events into DB
+- [~] Model watched folders in app config
+- [~] Ingest `General designs`
+- [~] Ingest `API spec drop/YAML`
+- [~] Prevent duplicate re-ingestion
+- [~] Persist intake events into DB
 
 ## 6. Work item UI
 
