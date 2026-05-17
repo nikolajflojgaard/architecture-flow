@@ -18,4 +18,9 @@ export class WorkItemsController {
   async getWorkItem(@Param('id') id: string) {
     return this.workItemsService.getWorkItem(id);
   }
+
+  @Get(':id/audit-events')
+  async listAuditEvents(@Param('id') id: string) {
+    return this.workItemsService.listAuditEvents(id);
+  }
 }

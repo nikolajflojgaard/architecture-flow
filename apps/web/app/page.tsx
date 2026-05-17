@@ -1,19 +1,15 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
-const intakeSources = [
-  'Data - NET / General designs',
-  'Data - NET / API spec drop / YAML',
-];
-
 const nextSlices = [
-  'Wire intake state from database',
+  'Add intake sync trigger inside the app shell',
   'Add authenticated inbox and work-item views',
   'Connect PDF artifacts to live work items',
 ];
 
 export default async function HomePage() {
   const workItems = await getWorkItems();
+  const intakeSources = await getIntakeSources();
 
   return (
     <main style={{ padding: 32, maxWidth: 1100, margin: '0 auto' }}>
@@ -27,11 +23,43 @@ export default async function HomePage() {
 
       <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
         <Card title="Current intake sources">
-          <ul>
-            {intakeSources.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
+          <form action="/api/intake/sync" method="post" style={{ marginBottom: 16 }}>
+            <button
+              type="submit"
+              style={{
+                border: '1px solid #22304d',
+                borderRadius: 10,
+                background: '#0f172a',
+                color: '#e2e8f0',
+                padding: '10px 14px',
+                cursor: 'pointer',
+              }}
+            >
+              Run intake sync
+            </button>
+          </form>
+
+          {intakeSources.length === 0 ? (
+            <p>No intake sources configured yet.</p>
+          ) : (
+            <div style={{ display: 'grid', gap: 12 }}>
+              {intakeSources.map((item) => (
+                <div key={item.id} style={{ padding: 14, border: '1px solid #22304d', borderRadius: 12, background: '#0f172a' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                    <strong>{item.displayName}</strong>
+                    <span style={{ color: item.enabled ? '#34d399' : '#f59e0b' }}>{item.enabled ? 'enabled' : 'disabled'}</span>
+                  </div>
+                  <div style={{ color: '#94a3b8', marginTop: 6 }}>{item.driveFolderPath ?? 'No folder path set'}</div>
+                  <div style={{ marginTop: 6 }}>
+                    {item.workItemCount} work items · {item.discoveredCount} discovered events
+                  </div>
+                  <div style={{ color: '#94a3b8', marginTop: 6 }}>
+                    Last discovered: {item.lastDiscoveredAt ? new Date(item.lastDiscoveredAt).toLocaleString() : 'Never'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
         <Card title="Next implementation slices">
           <ul>
@@ -98,6 +126,16 @@ type WorkItem = {
   status: string;
 };
 
+type IntakeSource = {
+  id: string;
+  displayName: string;
+  driveFolderPath: string | null;
+  enabled: boolean;
+  workItemCount: number;
+  discoveredCount: number;
+  lastDiscoveredAt: string | null;
+};
+
 async function getWorkItems(): Promise<WorkItem[]> {
   const baseUrl = process.env.ARCHITECTURE_FLOW_API_URL ?? 'http://localhost:4000';
 
@@ -111,6 +149,25 @@ async function getWorkItems(): Promise<WorkItem[]> {
     }
 
     const payload = (await response.json()) as { items?: WorkItem[] };
+    return payload.items ?? [];
+  } catch {
+    return [];
+  }
+}
+
+async function getIntakeSources(): Promise<IntakeSource[]> {
+  const baseUrl = process.env.ARCHITECTURE_FLOW_API_URL ?? 'http://localhost:4000';
+
+  try {
+    const response = await fetch(`${baseUrl}/v1/intake-sources`, {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const payload = (await response.json()) as { items?: IntakeSource[] };
     return payload.items ?? [];
   } catch {
     return [];

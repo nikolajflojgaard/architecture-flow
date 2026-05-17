@@ -79,4 +79,26 @@ export class WorkItemsService {
       item: result.rows[0] ?? null,
     };
   }
+
+  async listAuditEvents(workItemId: string) {
+    const result = await this.databaseService.query(
+      `
+        select
+          id,
+          event_type as "eventType",
+          actor,
+          payload_json as payload,
+          created_at as "createdAt"
+        from audit_events
+        where work_item_id = $1
+        order by created_at desc
+      `,
+      [workItemId],
+    );
+
+    return {
+      items: result.rows,
+      count: result.rowCount,
+    };
+  }
 }

@@ -57,11 +57,13 @@ Legend:
 
 ## 5. Drive intake
 
-- [~] Model watched folders in app config
-- [~] Ingest `General designs`
-- [~] Ingest `API spec drop/YAML`
-- [~] Prevent duplicate re-ingestion
-- [~] Persist intake events into DB
+- [x] Model watched folders in app config
+- [x] Ingest `General designs`
+- [x] Ingest `API spec drop/YAML`
+- [x] Prevent duplicate re-ingestion
+- [x] Persist intake events into DB
+- [x] Expose intake status in API/UI
+- [x] Add manual re-sync action
 
 ## 6. Work item UI
 
@@ -69,7 +71,7 @@ Legend:
 - [~] Work item detail page
 - [ ] Pipeline board
 - [ ] Artifact list/view
-- [ ] Audit trail view
+- [~] Audit trail view
 
 ## 7. PDF artifact flow
 
@@ -99,6 +101,12 @@ Legend:
 - [ ] Failed job visibility
 - [ ] Rerun action for failed steps
 - [ ] Minimal metrics / health endpoints
+
+## New tasks discovered during build
+
+- [ ] Add source metadata enrichment rules (customer/domain inference from folder/file patterns)
+- [ ] Move worker sync core into a shared internal package instead of API shell process execution
+- [ ] Add API-side auth/guard around manual sync before exposing it beyond local dev
 
 ## Open questions
 
