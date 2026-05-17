@@ -36,8 +36,8 @@ Legend:
 
 - [x] Replace API bootstrap with NestJS structure
 - [x] Add first DB-backed read endpoint for `work_items`
-- [ ] Add migrations/startup flow
-- [ ] Add seed/dev fixture path
+- [x] Add migrations/startup flow
+- [x] Add seed/dev fixture path
 
 ## 3. Data model
 
@@ -65,7 +65,7 @@ Legend:
 
 ## 6. Work item UI
 
-- [ ] Inbox page
+- [~] Inbox page
 - [ ] Work item detail page
 - [ ] Pipeline board
 - [ ] Artifact list/view

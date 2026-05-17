@@ -1,5 +1,5 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { Pool, QueryResult } from 'pg';
+import { Pool, QueryResult, QueryResultRow } from 'pg';
 
 @Injectable()
 export class DatabaseService implements OnModuleDestroy {
@@ -7,7 +7,7 @@ export class DatabaseService implements OnModuleDestroy {
     connectionString: process.env.DATABASE_URL,
   });
 
-  query<T = unknown>(text: string, params: unknown[] = []): Promise<QueryResult<T>> {
+  query<T extends QueryResultRow = QueryResultRow>(text: string, params: unknown[] = []): Promise<QueryResult<T>> {
     return this.pool.query<T>(text, params);
   }
 

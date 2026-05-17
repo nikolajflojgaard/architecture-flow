@@ -31,8 +31,19 @@ That keeps the first vertical slice simple before deciding whether an ORM is wor
 
 ## Next build slice
 
-1. install dependencies
-2. run the web/api shells locally
-3. wire real migrations/startup path into local dev
-4. add work-item write path / seed path
-5. connect UI inbox to `/v1/work-items`
+1. run local infra via `docker-compose`
+2. run `pnpm db:migrate`
+3. run `pnpm db:seed`
+4. start API + web shells
+5. confirm inbox renders seeded `work_items`
+
+## Commands
+
+```bash
+docker compose up -d
+pnpm install
+pnpm db:migrate
+pnpm db:seed
+pnpm --filter @architecture-flow/api dev
+pnpm --filter @architecture-flow/web dev
+```

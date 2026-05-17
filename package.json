@@ -8,7 +8,9 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "db:migrate": "pnpm --filter @architecture-flow/db migrate",
+    "db:seed": "pnpm --filter @architecture-flow/db seed"
   },
   "devDependencies": {
     "prettier": "^3.5.3",

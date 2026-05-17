@@ -1,0 +1,4 @@
+
+> @architecture-flow/shared@0.1.0 typecheck /Users/nikolajflojgaard/.openclaw/workspace/architecture-flow/packages/shared
+> tsc --noEmit -p tsconfig.json
+
