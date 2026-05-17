@@ -2,6 +2,11 @@ node_modules/
 .next/
 dist/
 coverage/
+.turbo/
+.turbo-cache/
+.cache/
+.tsbuildinfo
+.tsbuildinfo*
 .DS_Store
 .env
 .env.*

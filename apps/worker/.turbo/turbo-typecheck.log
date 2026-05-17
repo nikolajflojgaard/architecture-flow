@@ -1,4 +1,0 @@
-
-> @architecture-flow/worker@0.1.0 typecheck /Users/nikolajflojgaard/.openclaw/workspace/architecture-flow/apps/worker
-> tsc --noEmit -p tsconfig.json
-

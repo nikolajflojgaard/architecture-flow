@@ -1,4 +1,0 @@
-
-> @architecture-flow/db@0.1.0 typecheck /Users/nikolajflojgaard/.openclaw/workspace/architecture-flow/packages/db
-> tsc --noEmit -p tsconfig.json
-
