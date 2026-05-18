@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "sync:intake": "tsx src/drive-intake.ts",
+    "render:pdf": "tsx src/render-openapi-pdf.ts",
     "build": "tsc -p tsconfig.json",
     "lint": "echo 'lint not wired yet'",
     "typecheck": "tsc --noEmit -p tsconfig.json"

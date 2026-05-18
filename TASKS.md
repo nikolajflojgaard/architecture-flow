@@ -75,9 +75,9 @@ Legend:
 
 ## 7. PDF artifact flow
 
-- [ ] Integrate existing OpenAPI PDF renderer
-- [ ] Link generated PDFs to work items
-- [ ] Retry / error handling for render failures
+- [x] Integrate existing OpenAPI PDF renderer
+- [x] Link generated PDFs to work items
+- [x] Retry / error handling for render failures
 
 ## 8. BPMN workflow
 
@@ -119,9 +119,9 @@ Legend:
 
 Build next in this order:
 
-1. PDF artifact flow
-2. workflow-state actions from the UI
-3. BPMN integration
-4. source metadata enrichment
-5. move worker sync core into a shared package
-6. linting / formatting / typechecking baseline
+1. workflow-state actions from the UI
+2. BPMN integration
+3. source metadata enrichment
+4. move worker sync core into a shared package
+5. linting / formatting / typechecking baseline
+6. comments + review handoff

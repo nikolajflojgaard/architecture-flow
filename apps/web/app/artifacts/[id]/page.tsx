@@ -50,6 +50,9 @@ export default async function ArtifactPage({ params }: { params: Promise<{ id: s
             <DetailRow label="Drive file ID" value={artifact.driveFileId ?? 'Not set'} />
             <DetailRow label="Created" value={formatDate(artifact.createdAt)} />
           </div>
+          {artifact.storageBackend === 'local' && artifact.storagePath ? (
+            <p className="muted small-text">Local renderer output: {artifact.storagePath}</p>
+          ) : null}
         </section>
 
         <section className="panel">

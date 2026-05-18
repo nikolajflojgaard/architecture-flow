@@ -59,8 +59,8 @@ const artifactsBySourceFileId = {
     },
     {
       artifactType: 'api_spec_pdf',
-      storageBackend: 'minio',
-      storagePath: 'tdc-net/customer-platform/customer-address-api/v1/spec.pdf',
+      storageBackend: 'local',
+      storagePath: '.runtime/generated-pdfs/seed-yaml-1/customer-address-api-api-spec.pdf',
       driveFileId: null,
       version: 1,
     },
@@ -82,8 +82,8 @@ const auditEventsBySourceFileId = {
       payload: { source: 'API spec drop/YAML' },
     },
     {
-      eventType: 'artifact_rendered',
-      actor: 'worker',
+      eventType: 'pdf.rendered',
+      actor: 'pdf-renderer',
       payload: { artifactType: 'api_spec_pdf', version: 1 },
     },
   ],

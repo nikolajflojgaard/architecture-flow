@@ -1,8 +1,15 @@
 import Link from 'next/link';
 import { getArtifacts, getAuditEvents, getWorkItem } from '../../../lib/api';
 
-export default async function WorkItemPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function WorkItemPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ rendered?: string }>;
+}) {
   const { id } = await params;
+  const resolvedSearchParams = (await searchParams) ?? {};
   const [item, auditEvents, artifacts] = await Promise.all([
     getWorkItem(id),
     getAuditEvents(id),
@@ -24,6 +31,7 @@ export default async function WorkItemPage({ params }: { params: Promise<{ id: s
   }
 
   const latestEvent = auditEvents[0] ?? null;
+  const canRenderPdf = item.sourceType === 'drive-file' && /\.ya?ml$/i.test(item.title);
 
   return (
     <main className="page-shell narrow-shell">
@@ -43,6 +51,13 @@ export default async function WorkItemPage({ params }: { params: Promise<{ id: s
           <span className={`badge priority-${item.priority}`}>{item.priority}</span>
         </div>
       </div>
+
+      {resolvedSearchParams.rendered === 'ok' ? (
+        <div className="notice success">PDF render finished. Refresh again if you want to confirm the newest artifact version in the list.</div>
+      ) : null}
+      {resolvedSearchParams.rendered === 'error' ? (
+        <div className="notice error">PDF render failed. Check the latest audit event for the error message, then retry.</div>
+      ) : null}
 
       <section className="dashboard-grid detail-grid">
         <section className="panel">
@@ -73,6 +88,13 @@ export default async function WorkItemPage({ params }: { params: Promise<{ id: s
             ) : (
               <span className="muted small-text">No source link yet</span>
             )}
+            {canRenderPdf ? (
+              <form action={`/api/work-items/${item.id}/render-pdf`} method="post">
+                <button type="submit" className="button-primary">
+                  Render PDF
+                </button>
+              </form>
+            ) : null}
           </div>
         </section>
       </section>
@@ -130,7 +152,7 @@ export default async function WorkItemPage({ params }: { params: Promise<{ id: s
       <section className="panel" style={{ marginTop: 20 }}>
         <h2>Still missing</h2>
         <ul className="plain-list">
-          <li>Manual generation actions for KISS / final design / OpenAPI</li>
+          <li>Manual generation actions for KISS / final design / OpenAPI drafts</li>
           <li>Comments and review handoff</li>
           <li>Workflow-state transitions instead of read-only visibility</li>
         </ul>
