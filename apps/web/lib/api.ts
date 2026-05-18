@@ -43,6 +43,9 @@ export type Artifact = {
   createdAt: string;
 };
 
+export const workflowStatuses = ['new', 'triaged', 'in_progress', 'review', 'done'] as const;
+export type WorkflowStatus = (typeof workflowStatuses)[number];
+
 const baseUrl = process.env.ARCHITECTURE_FLOW_API_URL ?? 'http://localhost:4000';
 
 export async function getWorkItems(status?: string, limit = 50): Promise<WorkItem[]> {

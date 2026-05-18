@@ -1,12 +1,18 @@
 import Link from 'next/link';
-import { getArtifacts, getAuditEvents, getWorkItem } from '../../../lib/api';
+import {
+  getArtifacts,
+  getAuditEvents,
+  getWorkItem,
+  workflowStatuses,
+  type WorkflowStatus,
+} from '../../../lib/api';
 
 export default async function WorkItemPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ rendered?: string }>;
+  searchParams?: Promise<{ rendered?: string; statusChange?: string }>;
 }) {
   const { id } = await params;
   const resolvedSearchParams = (await searchParams) ?? {};
@@ -58,6 +64,12 @@ export default async function WorkItemPage({
       {resolvedSearchParams.rendered === 'error' ? (
         <div className="notice error">PDF render failed. Check the latest audit event for the error message, then retry.</div>
       ) : null}
+      {resolvedSearchParams.statusChange === 'ok' ? (
+        <div className="notice success">Workflow status updated.</div>
+      ) : null}
+      {resolvedSearchParams.statusChange === 'error' ? (
+        <div className="notice error">Workflow status update failed. Check the API/auth path and try again.</div>
+      ) : null}
 
       <section className="dashboard-grid detail-grid">
         <section className="panel">
@@ -69,6 +81,17 @@ export default async function WorkItemPage({
             <MetaBlock label="Created" value={formatDate(item.createdAt)} />
             <MetaBlock label="Updated" value={formatDate(item.updatedAt)} />
             <MetaBlock label="Latest event" value={latestEvent ? labelizeStatus(latestEvent.eventType) : 'No events'} />
+          </div>
+
+          <div className="action-row" style={{ marginTop: 20, flexWrap: 'wrap' }}>
+            {getStatusActions(item.status).map((status) => (
+              <form key={status} action={`/api/work-items/${item.id}/status`} method="post">
+                <input type="hidden" name="status" value={status} />
+                <button type="submit" className={status === getNextStatus(item.status) ? 'button-primary' : 'button-secondary'}>
+                  Move to {labelizeStatus(status)}
+                </button>
+              </form>
+            ))}
           </div>
         </section>
 
@@ -188,4 +211,17 @@ function formatDate(value: string) {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value));
+}
+
+function getStatusActions(currentStatus: string): WorkflowStatus[] {
+  return workflowStatuses.filter((status) => status !== currentStatus);
+}
+
+function getNextStatus(currentStatus: string): WorkflowStatus | null {
+  const currentIndex = workflowStatuses.findIndex((status) => status === currentStatus);
+  if (currentIndex === -1 || currentIndex === workflowStatuses.length - 1) {
+    return null;
+  }
+
+  return workflowStatuses[currentIndex + 1] ?? null;
 }

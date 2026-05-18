@@ -69,6 +69,7 @@ Legend:
 
 - [x] Inbox page
 - [x] Work item detail page
+- [x] Workflow-state actions from the UI
 - [ ] Pipeline board
 - [x] Artifact list/view
 - [x] Audit trail view
@@ -119,9 +120,9 @@ Legend:
 
 Build next in this order:
 
-1. workflow-state actions from the UI
-2. BPMN integration
-3. source metadata enrichment
-4. move worker sync core into a shared package
-5. linting / formatting / typechecking baseline
-6. comments + review handoff
+1. BPMN integration
+2. source metadata enrichment
+3. move worker sync core into a shared package
+4. linting / formatting / typechecking baseline
+5. comments + review handoff
+6. pipeline board

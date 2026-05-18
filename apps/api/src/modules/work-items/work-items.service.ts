@@ -1,5 +1,8 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../../services/database.service';
+
+export const workflowStatuses = ['new', 'triaged', 'in_progress', 'review', 'done'] as const;
+export type WorkflowStatus = (typeof workflowStatuses)[number];
 
 type ListWorkItemsOptions = {
   status?: string;
@@ -99,6 +102,88 @@ export class WorkItemsService {
     return {
       items: result.rows,
       count: result.rowCount,
+    };
+  }
+
+  async updateWorkflowStatus(id: string, nextStatus: string, actor: string) {
+    if (!workflowStatuses.includes(nextStatus as WorkflowStatus)) {
+      throw new BadRequestException(`Unsupported workflow status: ${nextStatus}`);
+    }
+
+    const currentResult = await this.databaseService.query<{
+      id: string;
+      status: WorkflowStatus;
+      title: string;
+    }>(
+      `
+        select
+          id,
+          workflow_status as status,
+          title
+        from work_items
+        where id = $1
+        limit 1
+      `,
+      [id],
+    );
+
+    const current = currentResult.rows[0];
+    if (!current) {
+      throw new NotFoundException('Work item not found');
+    }
+
+    const currentStatus = current.status;
+    if (currentStatus === nextStatus) {
+      return {
+        item: (await this.getWorkItem(id)).item,
+        changed: false,
+      };
+    }
+
+    await this.databaseService.query('begin');
+
+    try {
+      await this.databaseService.query(
+        `
+          update work_items
+          set workflow_status = $2,
+              updated_at = now()
+          where id = $1
+        `,
+        [id, nextStatus],
+      );
+
+      await this.databaseService.query(
+        `
+          insert into audit_events (
+            work_item_id,
+            event_type,
+            actor,
+            payload_json
+          ) values (
+            $1,
+            $2,
+            $3,
+            $4::jsonb
+          )
+        `,
+        [
+          id,
+          'workflow_status_changed',
+          actor,
+          JSON.stringify({ from: currentStatus, to: nextStatus, title: current.title }),
+        ],
+      );
+
+      await this.databaseService.query('commit');
+    } catch (error) {
+      await this.databaseService.query('rollback');
+      throw error;
+    }
+
+    return {
+      item: (await this.getWorkItem(id)).item,
+      changed: true,
     };
   }
 }

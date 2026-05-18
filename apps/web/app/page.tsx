@@ -2,9 +2,9 @@ import Link from 'next/link';
 import { getIntakeSources, getWorkItems } from '../lib/api';
 
 const nextSlices = [
-  'Connect PDF artifacts to real work items',
-  'Add auth shell before this leaves local dev',
-  'Map workflow actions to actual worker jobs',
+  'Stand up BPMN + workflow state orchestration',
+  'Add source metadata enrichment from folder and file patterns',
+  'Move worker sync core into a shared internal package',
 ];
 
 const statusOrder = ['all', 'new', 'triaged', 'in_progress', 'review', 'done'] as const;
@@ -167,6 +167,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <li>UI is reading real intake and work-item data from the API.</li>
             <li>Status filtering now makes the inbox usable instead of decorative.</li>
             <li>Ownership and priority gaps are visible immediately.</li>
+            <li>Work item detail pages can now move items through the workflow instead of only showing status.</li>
           </ul>
         </section>
 
