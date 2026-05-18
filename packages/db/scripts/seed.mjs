@@ -14,6 +14,7 @@ const pool = new Pool({ connectionString: databaseUrl });
 
 const items = [
   {
+    key: 'seed-general-design-1',
     title: 'BPI - FAS MyView integration',
     sourceType: 'drive-file',
     sourceFolder: 'General designs',
@@ -25,6 +26,7 @@ const items = [
     priority: 'normal',
   },
   {
+    key: 'seed-yaml-1',
     title: 'customer-address-api.yaml',
     sourceType: 'drive-file',
     sourceFolder: 'API spec drop/YAML',
@@ -36,6 +38,56 @@ const items = [
     priority: 'high',
   },
 ];
+
+const artifactsBySourceFileId = {
+  'seed-general-design-1': [
+    {
+      artifactType: 'kiss_draft',
+      storageBackend: 'drive',
+      storagePath: 'KISS General designs/BPI - FAS MyView integration.md',
+      driveFileId: 'seed-kiss-1',
+      version: 1,
+    },
+  ],
+  'seed-yaml-1': [
+    {
+      artifactType: 'openapi_yaml',
+      storageBackend: 'drive',
+      storagePath: 'API spec drop/YAML/customer-address-api.yaml',
+      driveFileId: 'seed-openapi-1',
+      version: 1,
+    },
+    {
+      artifactType: 'api_spec_pdf',
+      storageBackend: 'minio',
+      storagePath: 'tdc-net/customer-platform/customer-address-api/v1/spec.pdf',
+      driveFileId: null,
+      version: 1,
+    },
+  ],
+};
+
+const auditEventsBySourceFileId = {
+  'seed-general-design-1': [
+    {
+      eventType: 'intake_discovered',
+      actor: 'system',
+      payload: { source: 'General designs' },
+    },
+  ],
+  'seed-yaml-1': [
+    {
+      eventType: 'intake_discovered',
+      actor: 'system',
+      payload: { source: 'API spec drop/YAML' },
+    },
+    {
+      eventType: 'artifact_rendered',
+      actor: 'worker',
+      payload: { artifactType: 'api_spec_pdf', version: 1 },
+    },
+  ],
+};
 
 const intakeSources = [
   {
@@ -84,7 +136,17 @@ for (const source of intakeSources) {
   );
 }
 
+const workItemIdsBySourceFileId = new Map();
+
 for (const item of items) {
+  const existing = await pool.query(
+    `select id from work_items where source_file_id = $1 limit 1`,
+    [item.sourceFileId],
+  );
+
+  const workItemId = existing.rows[0]?.id ?? crypto.randomUUID();
+  workItemIdsBySourceFileId.set(item.sourceFileId, workItemId);
+
   await pool.query(
     `
       insert into work_items (
@@ -92,10 +154,20 @@ for (const item of items) {
         customer, domain, workflow_status, priority
       )
       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-      on conflict (source_file_id) do nothing
+      on conflict (source_file_id)
+      do update set
+        title = excluded.title,
+        source_type = excluded.source_type,
+        source_folder = excluded.source_folder,
+        source_link = excluded.source_link,
+        customer = excluded.customer,
+        domain = excluded.domain,
+        workflow_status = excluded.workflow_status,
+        priority = excluded.priority,
+        updated_at = now()
     `,
     [
-      crypto.randomUUID(),
+      workItemId,
       item.title,
       item.sourceType,
       item.sourceFolder,
@@ -109,5 +181,83 @@ for (const item of items) {
   );
 }
 
-console.log(`seeded ${items.length} work item(s) and ${intakeSources.length} intake source(s)`);
+for (const [sourceFileId, artifacts] of Object.entries(artifactsBySourceFileId)) {
+  const workItemId = workItemIdsBySourceFileId.get(sourceFileId);
+
+  if (!workItemId) continue;
+
+  for (const artifact of artifacts) {
+    const existing = await pool.query(
+      `
+        select id
+        from artifacts
+        where work_item_id = $1
+          and artifact_type = $2
+          and storage_backend = $3
+          and storage_path is not distinct from $4
+          and drive_file_id is not distinct from $5
+          and version = $6
+        limit 1
+      `,
+      [
+        workItemId,
+        artifact.artifactType,
+        artifact.storageBackend,
+        artifact.storagePath,
+        artifact.driveFileId,
+        artifact.version,
+      ],
+    );
+
+    if (existing.rowCount) continue;
+
+    await pool.query(
+      `
+        insert into artifacts (
+          id, work_item_id, artifact_type, storage_backend, storage_path, drive_file_id, version
+        )
+        values ($1,$2,$3,$4,$5,$6,$7)
+      `,
+      [
+        crypto.randomUUID(),
+        workItemId,
+        artifact.artifactType,
+        artifact.storageBackend,
+        artifact.storagePath,
+        artifact.driveFileId,
+        artifact.version,
+      ],
+    );
+  }
+}
+
+for (const [sourceFileId, events] of Object.entries(auditEventsBySourceFileId)) {
+  const workItemId = workItemIdsBySourceFileId.get(sourceFileId);
+
+  if (!workItemId) continue;
+
+  for (const event of events) {
+    const existing = await pool.query(
+      `
+        select id
+        from audit_events
+        where work_item_id = $1 and event_type = $2 and actor is not distinct from $3 and payload_json = $4::jsonb
+        limit 1
+      `,
+      [workItemId, event.eventType, event.actor, JSON.stringify(event.payload)],
+    );
+
+    if (existing.rowCount) continue;
+
+    await pool.query(
+      `
+        insert into audit_events (id, work_item_id, event_type, actor, payload_json)
+        values ($1,$2,$3,$4,$5::jsonb)
+      `,
+      [crypto.randomUUID(), workItemId, event.eventType, event.actor, JSON.stringify(event.payload)],
+    );
+  }
+}
+
+console.log(`seeded ${items.length} work item(s), artifact fixtures, and ${intakeSources.length} intake source(s)`);
 await pool.end();

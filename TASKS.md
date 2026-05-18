@@ -67,11 +67,11 @@ Legend:
 
 ## 6. Work item UI
 
-- [~] Inbox page
-- [~] Work item detail page
+- [x] Inbox page
+- [x] Work item detail page
 - [ ] Pipeline board
-- [ ] Artifact list/view
-- [~] Audit trail view
+- [x] Artifact list/view
+- [x] Audit trail view
 
 ## 7. PDF artifact flow
 
@@ -119,9 +119,9 @@ Legend:
 
 Build next in this order:
 
-1. connect UI inbox/work-item shell to live API data
-2. add DB migration + seed flow
-3. auth shell
-4. Drive ingestion into DB
-5. PDF artifact flow
-6. BPMN integration
+1. auth shell
+2. PDF artifact flow
+3. workflow-state actions from the UI
+4. BPMN integration
+5. source metadata enrichment
+6. move worker sync core into a shared package

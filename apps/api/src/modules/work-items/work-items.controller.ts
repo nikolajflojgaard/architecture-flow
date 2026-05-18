@@ -1,9 +1,13 @@
 import { Controller, Get, Inject, Param, Query } from '@nestjs/common';
+import { ArtifactsService } from '../artifacts/artifacts.service';
 import { WorkItemsService } from './work-items.service';
 
 @Controller('/v1/work-items')
 export class WorkItemsController {
-  constructor(@Inject(WorkItemsService) private readonly workItemsService: WorkItemsService) {}
+  constructor(
+    @Inject(WorkItemsService) private readonly workItemsService: WorkItemsService,
+    @Inject(ArtifactsService) private readonly artifactsService: ArtifactsService,
+  ) {}
 
   @Get()
   async listWorkItems(@Query('status') status?: string, @Query('limit') limit?: string) {
@@ -22,5 +26,10 @@ export class WorkItemsController {
   @Get(':id/audit-events')
   async listAuditEvents(@Param('id') id: string) {
     return this.workItemsService.listAuditEvents(id);
+  }
+
+  @Get(':id/artifacts')
+  async listArtifacts(@Param('id') id: string) {
+    return this.artifactsService.listArtifactsForWorkItem(id);
   }
 }
