@@ -85,7 +85,7 @@ Legend:
 - [x] Stand up Flowable OSS
 - [x] Define first BPMN process
 - [x] Map user tasks to UI actions
-- [ ] Map service tasks to worker jobs
+- [x] Map service tasks to worker jobs
 - [ ] Persist workflow state back into app DB
 
 ## 9. AI-assisted generation
@@ -133,10 +133,10 @@ Legend:
 
 Build next in this order:
 
-1. Map service tasks to worker jobs
-2. Persist workflow state back into app DB
-3. source metadata enrichment
-4. move worker sync core into a shared package
-5. choose first deployment target and add deployment bootstrap
-6. linting / formatting / typechecking baseline
-7. pipeline board
+1. Persist workflow state back into app DB
+2. source metadata enrichment
+3. move worker sync core into a shared package
+4. choose first deployment target and add deployment bootstrap
+5. linting / formatting / typechecking baseline
+6. pipeline board
+7. OpenClaw integration boundary

@@ -3,6 +3,7 @@ import { ArtifactsService } from '../artifacts/artifacts.service';
 import { CurrentUser } from '../auth/auth-user.decorator';
 import { AuthGuard } from '../auth/auth.guard';
 import type { AuthUser } from '../auth/auth.types';
+import { WorkerJobsService } from '../../services/worker-jobs.service';
 import { WorkItemsService } from './work-items.service';
 
 @Controller('/v1/work-items')
@@ -11,6 +12,7 @@ export class WorkItemsController {
   constructor(
     @Inject(WorkItemsService) private readonly workItemsService: WorkItemsService,
     @Inject(ArtifactsService) private readonly artifactsService: ArtifactsService,
+    @Inject(WorkerJobsService) private readonly workerJobsService: WorkerJobsService,
   ) {}
 
   @Get()
@@ -60,5 +62,10 @@ export class WorkItemsController {
   ) {
     const actor = user?.email ?? user?.name ?? 'system';
     return this.workItemsService.completeTask(id, taskId, actor);
+  }
+
+  @Post(':id/classify-intake')
+  async classifyIntake(@Param('id') id: string) {
+    return this.workerJobsService.runServiceTask('intake.classify', id);
   }
 }

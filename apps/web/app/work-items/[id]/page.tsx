@@ -12,7 +12,7 @@ export default async function WorkItemPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ rendered?: string; statusChange?: string; taskComplete?: string }>;
+  searchParams?: Promise<{ rendered?: string; statusChange?: string; taskComplete?: string; classified?: string }>;
 }) {
   const { id } = await params;
   const resolvedSearchParams = (await searchParams) ?? {};
@@ -77,6 +77,12 @@ export default async function WorkItemPage({
       {resolvedSearchParams.taskComplete === 'error' ? (
         <div className="notice error">Workflow task completion failed. Refresh and try again.</div>
       ) : null}
+      {resolvedSearchParams.classified === 'ok' ? (
+        <div className="notice success">Intake classification job ran.</div>
+      ) : null}
+      {resolvedSearchParams.classified === 'error' ? (
+        <div className="notice error">Intake classification job failed.</div>
+      ) : null}
 
       <section className="dashboard-grid detail-grid">
         <section className="panel">
@@ -136,6 +142,11 @@ export default async function WorkItemPage({
             ) : (
               <span className="muted small-text">No source link yet</span>
             )}
+            <form action={`/api/work-items/${item.id}/classify-intake`} method="post">
+              <button type="submit" className="button-secondary">
+                Run intake classification
+              </button>
+            </form>
             {canRenderPdf ? (
               <form action={`/api/work-items/${item.id}/render-pdf`} method="post">
                 <button type="submit" className="button-primary">

@@ -43,13 +43,17 @@ The first job is to prove state ownership and workflow orchestration, not to cos
 
 ## Worker topics assumed by the BPMN file
 
-The BPMN file currently assumes these external-worker topics:
+The BPMN file currently uses these external-worker topics:
 
 - `intake.classify`
 - `artifact.render-pdf`
 
-That does **not** mean they are integrated yet.
-It means the process definition has named seams for the worker layer.
+These topics are now mapped in the worker code through the generic service-task runner:
+
+- `pnpm --filter @architecture-flow/worker service-task intake.classify <workItemId>`
+- `pnpm --filter @architecture-flow/worker service-task artifact.render-pdf <workItemId>`
+
+The app is still using manual trigger endpoints today, but the topic-to-handler mapping is now real instead of just diagram text.
 
 ## What this process deliberately does not solve yet
 
@@ -63,7 +67,7 @@ It means the process definition has named seams for the worker layer.
 
 The next real slice should be:
 
-1. API service boundary for Flowable
-2. create a workflow run when a work item enters the managed process
-3. persist process instance id into `workflow_runs`
+1. create a workflow run when a work item enters the managed process
+2. persist process instance id into `workflow_runs`
+3. persist service-task/user-task state into app tables
 4. move app status changes behind workflow-backed transitions
