@@ -1,8 +1,10 @@
-import { Controller, Get, Inject, Param, Query } from '@nestjs/common';
+import { Controller, Get, Inject, Param, Query, UseGuards } from '@nestjs/common';
 import { ArtifactsService } from '../artifacts/artifacts.service';
+import { AuthGuard } from '../auth/auth.guard';
 import { WorkItemsService } from './work-items.service';
 
 @Controller('/v1/work-items')
+@UseGuards(AuthGuard)
 export class WorkItemsController {
   constructor(
     @Inject(WorkItemsService) private readonly workItemsService: WorkItemsService,

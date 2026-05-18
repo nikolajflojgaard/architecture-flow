@@ -29,6 +29,10 @@ body {
   font-family: Inter, Arial, sans-serif;
 }
 
+code {
+  font-family: 'SFMono-Regular', Menlo, monospace;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -41,6 +45,42 @@ button {
 pre {
   margin: 0;
   font-family: 'SFMono-Regular', Menlo, monospace;
+}
+
+.app-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(11, 16, 32, 0.92);
+  backdrop-filter: blur(10px);
+}
+
+.topbar-brand,
+.topbar-user {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.topbar-hint {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.topbar-pill {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--panel-subtle);
+  color: var(--accent);
+  font-size: 0.8rem;
 }
 
 .page-shell {
@@ -320,6 +360,10 @@ pre {
   color: var(--muted);
 }
 
+.auth-state-panel {
+  margin-top: 80px;
+}
+
 .compact-empty {
   padding: 14px;
 }
@@ -392,7 +436,8 @@ pre {
   .bottom-grid,
   .detail-grid,
   .meta-grid,
-  .work-item-card {
+  .work-item-card,
+  .app-topbar {
     grid-template-columns: 1fr;
     display: grid;
   }
@@ -404,5 +449,9 @@ pre {
 
   .page-shell {
     padding: 24px 16px 48px;
+  }
+
+  .app-topbar {
+    padding: 12px 16px;
   }
 }

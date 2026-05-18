@@ -51,9 +51,9 @@ Legend:
 
 ## 4. Auth
 
-- [ ] Set up Authentik integration design
-- [ ] Define roles: admin / architect / reviewer
-- [ ] Protect web app and API routes
+- [x] Set up Authentik integration design
+- [x] Define roles: admin / architect / reviewer
+- [x] Protect web app and API routes
 
 ## 5. Drive intake
 
@@ -119,9 +119,9 @@ Legend:
 
 Build next in this order:
 
-1. auth shell
-2. PDF artifact flow
-3. workflow-state actions from the UI
-4. BPMN integration
-5. source metadata enrichment
-6. move worker sync core into a shared package
+1. PDF artifact flow
+2. workflow-state actions from the UI
+3. BPMN integration
+4. source metadata enrichment
+5. move worker sync core into a shared package
+6. linting / formatting / typechecking baseline
