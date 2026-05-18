@@ -83,7 +83,7 @@ Legend:
 ## 8. BPMN workflow
 
 - [x] Stand up Flowable OSS
-- [ ] Define first BPMN process
+- [x] Define first BPMN process
 - [ ] Map user tasks to UI actions
 - [ ] Map service tasks to worker jobs
 - [ ] Persist workflow state back into app DB
@@ -120,9 +120,9 @@ Legend:
 
 Build next in this order:
 
-1. BPMN integration
-2. source metadata enrichment
-3. move worker sync core into a shared package
-4. linting / formatting / typechecking baseline
-5. comments + review handoff
-6. pipeline board
+1. Map user tasks to UI actions
+2. Map service tasks to worker jobs
+3. Persist workflow state back into app DB
+4. source metadata enrichment
+5. move worker sync core into a shared package
+6. linting / formatting / typechecking baseline

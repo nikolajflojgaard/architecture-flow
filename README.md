@@ -109,8 +109,10 @@ Default local endpoints:
 - default admin password: `test`
 
 This is only the engine bootstrap.
+The repo now includes the first BPMN definition under `workflows/bpmn/architecture-flow-v1.bpmn20.xml`.
+
 The repo still needs:
 
-- the first BPMN definition
 - app-to-Flowable integration
 - mapping between work-item states and workflow instance state
+- worker/UI wiring for BPMN user tasks and service tasks
