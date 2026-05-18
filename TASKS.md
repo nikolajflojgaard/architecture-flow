@@ -103,6 +103,18 @@ Legend:
 - [ ] Rerun action for failed steps
 - [ ] Minimal metrics / health endpoints
 
+## 11. Deployment / runtime
+
+- [ ] Choose first deployment target (single VPS vs Docker host vs Coolify/CapRover)
+- [ ] Define production runtime topology (web, api, worker, postgres, redis, minio, flowable)
+- [ ] Add production compose/deployment manifests
+- [ ] Add production environment variable template and secrets checklist
+- [ ] Add persistent storage/backup plan for Postgres and MinIO
+- [ ] Add reverse proxy / TLS entrypoint
+- [ ] Add deployment bootstrap doc
+- [ ] Add update/rollback procedure
+- [ ] Add basic uptime/health monitoring for deployed services
+
 ## New tasks discovered during build
 
 - [ ] Add source metadata enrichment rules (customer/domain inference from folder/file patterns)
@@ -115,6 +127,7 @@ Legend:
 - [ ] Should artifacts live primarily in Drive, MinIO, or hybrid from day one?
 - [ ] Should the worker poll Drive only, or later move to webhook/event-driven ingestion?
 - [ ] Should BPMN definitions live in repo files, DB, or both?
+- [ ] Which deployment target should v1 use first: simple VPS/Docker host, or a small platform like Coolify?
 
 ## Current recommendation
 
@@ -125,4 +138,5 @@ Build next in this order:
 3. Persist workflow state back into app DB
 4. source metadata enrichment
 5. move worker sync core into a shared package
-6. linting / formatting / typechecking baseline
+6. choose first deployment target and add deployment bootstrap
+7. linting / formatting / typechecking baseline
