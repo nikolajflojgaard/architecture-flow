@@ -50,6 +50,7 @@ The goal is to prove the real ingestion backbone before adding queues/webhooks.
 5. confirm inbox renders seeded `work_items`
 6. run `pnpm --filter @architecture-flow/worker sync:intake`
 7. confirm real Drive files appear as `work_items`
+8. confirm Flowable REST answers before wiring BPMN/app integration
 
 ## Commands
 
@@ -61,4 +62,23 @@ pnpm db:seed
 pnpm --filter @architecture-flow/api dev
 pnpm --filter @architecture-flow/web dev
 pnpm --filter @architecture-flow/worker sync:intake
+curl -u admin:test http://localhost:8080/flowable-rest/service/management/engine
 ```
+
+## Flowable bootstrap notes
+
+Local dev now includes a `flowable` container via `flowable/flowable-rest`.
+The container bootstraps the REST API admin user through the documented `flowable.rest.app.admin.*` properties exposed as environment variables.
+
+Expected local defaults:
+
+- base URL: `http://localhost:8080/flowable-rest`
+- username: `admin`
+- password: `test`
+
+This is intentionally just the bootstrap step.
+We have not yet:
+
+- deployed a BPMN definition
+- created workflow instances from app work items
+- synced Flowable task state back into `work_items`

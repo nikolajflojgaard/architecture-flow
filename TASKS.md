@@ -82,7 +82,7 @@ Legend:
 
 ## 8. BPMN workflow
 
-- [ ] Stand up Flowable OSS
+- [x] Stand up Flowable OSS
 - [ ] Define first BPMN process
 - [ ] Map user tasks to UI actions
 - [ ] Map service tasks to worker jobs

@@ -27,6 +27,20 @@ services:
     volumes:
       - minio_data:/data
 
+  flowable:
+    image: flowable/flowable-rest:7.1.0
+    depends_on:
+      - postgres
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/architecture_flow
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      FLOWABLE_REST_APP_ADMIN_USER_ID: admin
+      FLOWABLE_REST_APP_ADMIN_PASSWORD: test
+    ports:
+      - "8080:8080"
+
 volumes:
   postgres_data:
   minio_data:

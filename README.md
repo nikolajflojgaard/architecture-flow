@@ -85,6 +85,7 @@ This repo currently holds:
 - system architecture notes
 - v1 product spec
 - task tracking
+- local Flowable/infra bootstrap for the first BPMN slice
 
 ## Bootstrap status
 
@@ -96,3 +97,20 @@ The repo now includes:
 - local dev infra starter
 
 Next step is to wire the first real vertical slice through DB + UI + intake.
+
+## Workflow engine bootstrap
+
+Local dev now includes a Flowable REST container in `docker-compose.yml`.
+
+Default local endpoints:
+
+- Flowable REST: `http://localhost:8080/flowable-rest`
+- default admin user: `admin`
+- default admin password: `test`
+
+This is only the engine bootstrap.
+The repo still needs:
+
+- the first BPMN definition
+- app-to-Flowable integration
+- mapping between work-item states and workflow instance state
