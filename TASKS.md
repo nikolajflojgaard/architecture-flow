@@ -84,7 +84,7 @@ Legend:
 
 - [x] Stand up Flowable OSS
 - [x] Define first BPMN process
-- [ ] Map user tasks to UI actions
+- [x] Map user tasks to UI actions
 - [ ] Map service tasks to worker jobs
 - [ ] Persist workflow state back into app DB
 
@@ -133,10 +133,10 @@ Legend:
 
 Build next in this order:
 
-1. Map user tasks to UI actions
-2. Map service tasks to worker jobs
-3. Persist workflow state back into app DB
-4. source metadata enrichment
-5. move worker sync core into a shared package
-6. choose first deployment target and add deployment bootstrap
-7. linting / formatting / typechecking baseline
+1. Map service tasks to worker jobs
+2. Persist workflow state back into app DB
+3. source metadata enrichment
+4. move worker sync core into a shared package
+5. choose first deployment target and add deployment bootstrap
+6. linting / formatting / typechecking baseline
+7. pipeline board

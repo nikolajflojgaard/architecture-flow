@@ -43,6 +43,18 @@ export type Artifact = {
   createdAt: string;
 };
 
+export type WorkflowTask = {
+  id: string;
+  workItemId: string;
+  workflowRunId: string | null;
+  taskType: string;
+  assignedTo: string | null;
+  status: string;
+  payload: Record<string, unknown> | null;
+  dueAt: string | null;
+  createdAt: string;
+};
+
 export const workflowStatuses = ['new', 'triaged', 'in_progress', 'review', 'done'] as const;
 export type WorkflowStatus = (typeof workflowStatuses)[number];
 
@@ -117,6 +129,23 @@ export async function getArtifacts(workItemId: string): Promise<Artifact[]> {
     }
 
     const payload = (await response.json()) as { items?: Artifact[] };
+    return payload.items ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function getTasks(workItemId: string): Promise<WorkflowTask[]> {
+  try {
+    const response = await fetch(`${baseUrl}/v1/work-items/${workItemId}/tasks`, {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const payload = (await response.json()) as { items?: WorkflowTask[] };
     return payload.items ?? [];
   } catch {
     return [];

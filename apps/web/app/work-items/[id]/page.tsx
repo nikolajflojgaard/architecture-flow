@@ -2,9 +2,9 @@ import Link from 'next/link';
 import {
   getArtifacts,
   getAuditEvents,
+  getTasks,
   getWorkItem,
-  workflowStatuses,
-  type WorkflowStatus,
+  type WorkflowTask,
 } from '../../../lib/api';
 
 export default async function WorkItemPage({
@@ -12,14 +12,15 @@ export default async function WorkItemPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ rendered?: string; statusChange?: string }>;
+  searchParams?: Promise<{ rendered?: string; statusChange?: string; taskComplete?: string }>;
 }) {
   const { id } = await params;
   const resolvedSearchParams = (await searchParams) ?? {};
-  const [item, auditEvents, artifacts] = await Promise.all([
+  const [item, auditEvents, artifacts, tasks] = await Promise.all([
     getWorkItem(id),
     getAuditEvents(id),
     getArtifacts(id),
+    getTasks(id),
   ]);
 
   if (!item) {
@@ -70,6 +71,12 @@ export default async function WorkItemPage({
       {resolvedSearchParams.statusChange === 'error' ? (
         <div className="notice error">Workflow status update failed. Check the API/auth path and try again.</div>
       ) : null}
+      {resolvedSearchParams.taskComplete === 'ok' ? (
+        <div className="notice success">Workflow task completed.</div>
+      ) : null}
+      {resolvedSearchParams.taskComplete === 'error' ? (
+        <div className="notice error">Workflow task completion failed. Refresh and try again.</div>
+      ) : null}
 
       <section className="dashboard-grid detail-grid">
         <section className="panel">
@@ -83,15 +90,33 @@ export default async function WorkItemPage({
             <MetaBlock label="Latest event" value={latestEvent ? labelizeStatus(latestEvent.eventType) : 'No events'} />
           </div>
 
-          <div className="action-row" style={{ marginTop: 20, flexWrap: 'wrap' }}>
-            {getStatusActions(item.status).map((status) => (
-              <form key={status} action={`/api/work-items/${item.id}/status`} method="post">
-                <input type="hidden" name="status" value={status} />
-                <button type="submit" className={status === getNextStatus(item.status) ? 'button-primary' : 'button-secondary'}>
-                  Move to {labelizeStatus(status)}
-                </button>
-              </form>
-            ))}
+          <div style={{ marginTop: 20 }}>
+            <h3 style={{ marginBottom: 12 }}>Current user tasks</h3>
+            {tasks.filter((task) => task.status === 'open').length === 0 ? (
+              <p className="muted small-text">No open workflow tasks for this item.</p>
+            ) : (
+              <div className="timeline-list">
+                {tasks
+                  .filter((task) => task.status === 'open')
+                  .map((task) => (
+                    <article key={task.id} className="timeline-card">
+                      <div className="timeline-card-top">
+                        <strong>{getTaskTitle(task)}</strong>
+                        <span className="badge status-review">open</span>
+                      </div>
+                      <p className="work-item-meta">Type: {labelizeStatus(task.taskType)}</p>
+                      <p className="work-item-meta muted">
+                        {task.assignedTo ?? 'Unassigned'} · created {formatDate(task.createdAt)}
+                      </p>
+                      <form action={`/api/work-items/${item.id}/tasks/${task.id}/complete`} method="post" style={{ marginTop: 12 }}>
+                        <button type="submit" className="button-primary">
+                          {getCompletionLabel(task)}
+                        </button>
+                      </form>
+                    </article>
+                  ))}
+              </div>
+            )}
           </div>
         </section>
 
@@ -175,9 +200,9 @@ export default async function WorkItemPage({
       <section className="panel" style={{ marginTop: 20 }}>
         <h2>Still missing</h2>
         <ul className="plain-list">
+          <li>Real Flowable task ownership and instance linkage instead of app-local bootstrap tasks</li>
           <li>Manual generation actions for KISS / final design / OpenAPI drafts</li>
           <li>Comments and review handoff</li>
-          <li>Workflow-state transitions instead of read-only visibility</li>
         </ul>
       </section>
     </main>
@@ -213,15 +238,24 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-function getStatusActions(currentStatus: string): WorkflowStatus[] {
-  return workflowStatuses.filter((status) => status !== currentStatus);
-}
-
-function getNextStatus(currentStatus: string): WorkflowStatus | null {
-  const currentIndex = workflowStatuses.findIndex((status) => status === currentStatus);
-  if (currentIndex === -1 || currentIndex === workflowStatuses.length - 1) {
-    return null;
+function getTaskTitle(task: WorkflowTask) {
+  const payloadTitle = typeof task.payload?.title === 'string' ? task.payload.title : null;
+  if (payloadTitle) {
+    return payloadTitle;
   }
 
-  return workflowStatuses[currentIndex + 1] ?? null;
+  return labelizeStatus(task.taskType);
+}
+
+function getCompletionLabel(task: WorkflowTask) {
+  switch (task.taskType) {
+    case 'triage':
+      return 'Complete triage';
+    case 'produce_artifacts':
+      return 'Mark artifacts ready for review';
+    case 'review_and_approve':
+      return 'Approve and move forward';
+    default:
+      return 'Complete task';
+  }
 }

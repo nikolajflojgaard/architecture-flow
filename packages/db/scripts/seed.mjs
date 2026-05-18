@@ -67,6 +67,23 @@ const artifactsBySourceFileId = {
   ],
 };
 
+const tasksBySourceFileId = {
+  'seed-general-design-1': [
+    {
+      taskType: 'triage',
+      status: 'open',
+      payload: { title: 'Triage work item', expectedNextStatus: 'triaged' },
+    },
+  ],
+  'seed-yaml-1': [
+    {
+      taskType: 'produce_artifacts',
+      status: 'open',
+      payload: { title: 'Produce working artifacts', expectedNextStatus: 'in_progress' },
+    },
+  ],
+};
+
 const auditEventsBySourceFileId = {
   'seed-general-design-1': [
     {
@@ -227,6 +244,34 @@ for (const [sourceFileId, artifacts] of Object.entries(artifactsBySourceFileId))
         artifact.driveFileId,
         artifact.version,
       ],
+    );
+  }
+}
+
+for (const [sourceFileId, tasks] of Object.entries(tasksBySourceFileId)) {
+  const workItemId = workItemIdsBySourceFileId.get(sourceFileId);
+
+  if (!workItemId) continue;
+
+  for (const task of tasks) {
+    const existing = await pool.query(
+      `
+        select id
+        from tasks
+        where work_item_id = $1 and task_type = $2 and status = $3 and payload_json = $4::jsonb
+        limit 1
+      `,
+      [workItemId, task.taskType, task.status, JSON.stringify(task.payload)],
+    );
+
+    if (existing.rowCount) continue;
+
+    await pool.query(
+      `
+        insert into tasks (id, work_item_id, task_type, status, payload_json)
+        values ($1,$2,$3,$4,$5::jsonb)
+      `,
+      [crypto.randomUUID(), workItemId, task.taskType, task.status, JSON.stringify(task.payload)],
     );
   }
 }
