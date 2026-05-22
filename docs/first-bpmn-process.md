@@ -57,17 +57,23 @@ The app is still using manual trigger endpoints today, but the topic-to-handler 
 
 ## What this process deliberately does not solve yet
 
-- creating Flowable process instances from app work items
-- syncing task state back into `workflow_runs` / `tasks`
+- creating real Flowable process instances from app work items
 - assigning real Flowable task owners from app users
-- wiring UI actions to Flowable task completion
+- wiring UI actions to Flowable task completion in the engine itself
 - handling blocked / clarification / timer states
+
+## What the repo now does solve
+
+- creates and maintains `workflow_runs` rows in the app DB
+- persists current workflow step metadata back into `workflow_runs`
+- links user tasks to the active workflow run instead of leaving them app-local only
+- records service-task executions as first-class `tasks` rows with success/failure history
 
 ## Next build step
 
 The next real slice should be:
 
-1. create a workflow run when a work item enters the managed process
-2. persist process instance id into `workflow_runs`
-3. persist service-task/user-task state into app tables
-4. move app status changes behind workflow-backed transitions
+1. create real Flowable process instances and persist `process_instance_id`
+2. move app status changes behind workflow-backed transitions
+3. enrich source metadata from folder/file patterns
+4. move worker sync core behind a cleaner shared package boundary

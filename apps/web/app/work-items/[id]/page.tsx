@@ -89,6 +89,11 @@ export default async function WorkItemPage({
           <h2>Workflow snapshot</h2>
           <div className="meta-grid">
             <MetaBlock label="Assigned to" value={item.assignedTo ?? 'Unassigned'} />
+            <MetaBlock label="Workflow run" value={item.activeWorkflowRunId ?? 'Not started'} />
+            <MetaBlock label="Run status" value={item.activeWorkflowRunStatus ?? 'Not started'} />
+            <MetaBlock label="Current step" value={item.activeWorkflowStepKey ? labelizeStatus(item.activeWorkflowStepKey) : 'Not started'} />
+            <MetaBlock label="Step type" value={item.activeWorkflowStepType ?? 'n/a'} />
+            <MetaBlock label="Flowable instance" value={item.processInstanceId ?? 'Not linked yet'} />
             <MetaBlock label="Source folder" value={item.sourceFolder} />
             <MetaBlock label="Source type" value={item.sourceType} />
             <MetaBlock label="Created" value={formatDate(item.createdAt)} />
@@ -211,7 +216,7 @@ export default async function WorkItemPage({
       <section className="panel" style={{ marginTop: 20 }}>
         <h2>Still missing</h2>
         <ul className="plain-list">
-          <li>Real Flowable task ownership and instance linkage instead of app-local bootstrap tasks</li>
+          <li>Real Flowable process-instance creation and task completion instead of DB-only mirrored workflow state</li>
           <li>Manual generation actions for KISS / final design / OpenAPI drafts</li>
           <li>Comments and review handoff</li>
         </ul>
@@ -250,6 +255,10 @@ function formatDate(value: string) {
 }
 
 function getTaskTitle(task: WorkflowTask) {
+  if (typeof task.title === 'string' && task.title) {
+    return task.title;
+  }
+
   const payloadTitle = typeof task.payload?.title === 'string' ? task.payload.title : null;
   if (payloadTitle) {
     return payloadTitle;

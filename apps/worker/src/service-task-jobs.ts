@@ -13,6 +13,7 @@ const driveAccount = process.env.GOOGLE_DRIVE_ACCOUNT;
 const workspaceRoot = path.resolve(process.cwd(), '..', '..');
 const rendererRoot = path.resolve(workspaceRoot, '..', 'work-architecture-playbook');
 const outputRoot = path.resolve(workspaceRoot, '.runtime', 'generated-pdfs');
+const workflowProcessDefinitionKey = 'architecture-flow-v1';
 
 export async function runServiceTaskJob(topic: ServiceTaskTopic, workItemId: string) {
   if (!databaseUrl) {
@@ -20,16 +21,29 @@ export async function runServiceTaskJob(topic: ServiceTaskTopic, workItemId: str
   }
 
   const pool = new Pool({ connectionString: databaseUrl });
+  const workflowRunId = await ensureWorkflowRun(pool, workItemId);
+  const taskId = await startServiceTask(pool, workItemId, workflowRunId, topic);
 
   try {
+    let result: Record<string, unknown>;
+
     switch (topic) {
       case 'intake.classify':
-        return await classifyIntake(pool, workItemId);
+        result = await classifyIntake(pool, workItemId);
+        break;
       case 'artifact.render-pdf':
-        return await renderPdfArtifact(pool, workItemId);
+        result = await renderPdfArtifact(pool, workItemId);
+        break;
       default:
         throw new Error(`Unsupported service task topic: ${topic}`);
     }
+
+    await completeServiceTask(pool, taskId, workItemId, workflowRunId, topic, result);
+    return result;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    await failServiceTask(pool, taskId, workItemId, workflowRunId, topic, message).catch(() => undefined);
+    throw error;
   } finally {
     await pool.end();
   }
@@ -137,6 +151,7 @@ async function loadWorkItem(pool: Pool, id: string) {
     customer: string | null;
     domain: string | null;
     priority: string;
+    workflowStatus: string;
   }>(
     `
       select id,
@@ -146,7 +161,8 @@ async function loadWorkItem(pool: Pool, id: string) {
              source_folder as "sourceFolder",
              customer,
              domain,
-             priority
+             priority,
+             workflow_status as "workflowStatus"
       from work_items
       where id = $1
       limit 1
@@ -155,6 +171,216 @@ async function loadWorkItem(pool: Pool, id: string) {
   );
 
   return result.rows[0] ?? null;
+}
+
+async function ensureWorkflowRun(pool: Pool, workItemId: string) {
+  const workItem = await loadWorkItem(pool, workItemId);
+  if (!workItem) {
+    throw new Error(`Work item ${workItemId} not found`);
+  }
+
+  const existing = await pool.query<{ id: string }>(
+    `
+      select id
+      from workflow_runs
+      where work_item_id = $1 and ended_at is null
+      order by started_at desc
+      limit 1
+    `,
+    [workItemId],
+  );
+
+  const target = getWorkflowRunTarget(workItem.workflowStatus);
+  const payload = JSON.stringify({ workflowStatus: workItem.workflowStatus, stepKey: target.stepKey, stepType: target.stepType });
+
+  if (existing.rowCount) {
+    await pool.query(
+      `
+        update workflow_runs
+        set status = $2,
+            current_step_key = $3,
+            current_step_type = $4,
+            payload_json = coalesce(payload_json, '{}'::jsonb) || $5::jsonb,
+            updated_at = now(),
+            ended_at = case when $2 = 'completed' then coalesce(ended_at, now()) else null end
+        where id = $1
+      `,
+      [existing.rows[0].id, target.runStatus, target.stepKey, target.stepType, payload],
+    );
+
+    return existing.rows[0].id;
+  }
+
+  const workflowRunId = crypto.randomUUID();
+  await pool.query(
+    `
+      insert into workflow_runs (
+        id,
+        work_item_id,
+        process_definition_key,
+        status,
+        current_step_key,
+        current_step_type,
+        payload_json,
+        started_at,
+        updated_at,
+        ended_at
+      ) values (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7::jsonb,
+        now(),
+        now(),
+        $8
+      )
+    `,
+    [
+      workflowRunId,
+      workItemId,
+      workflowProcessDefinitionKey,
+      target.runStatus,
+      target.stepKey,
+      target.stepType,
+      payload,
+      target.runStatus === 'completed' ? new Date().toISOString() : null,
+    ],
+  );
+
+  return workflowRunId;
+}
+
+async function startServiceTask(pool: Pool, workItemId: string, workflowRunId: string, topic: ServiceTaskTopic) {
+  const taskId = crypto.randomUUID();
+  await pool.query(
+    `
+      insert into tasks (
+        id,
+        work_item_id,
+        workflow_run_id,
+        task_type,
+        title,
+        assigned_to,
+        status,
+        payload_json,
+        external_ref,
+        created_at,
+        updated_at
+      ) values (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        'open',
+        $7::jsonb,
+        $8,
+        now(),
+        now()
+      )
+    `,
+    [
+      taskId,
+      workItemId,
+      workflowRunId,
+      `service:${topic}`,
+      getServiceTaskTitle(topic),
+      'worker-service-task',
+      JSON.stringify({ serviceTaskTopic: topic, startedAt: new Date().toISOString() }),
+      topic,
+    ],
+  );
+
+  await insertAuditEvent(pool, workItemId, 'task.started', 'worker-service-task', {
+    taskId,
+    taskType: `service:${topic}`,
+    workflowRunId,
+  });
+
+  return taskId;
+}
+
+async function completeServiceTask(
+  pool: Pool,
+  taskId: string,
+  workItemId: string,
+  workflowRunId: string,
+  topic: ServiceTaskTopic,
+  result: Record<string, unknown>,
+) {
+  await pool.query(
+    `
+      update tasks
+      set status = 'completed',
+          completed_at = now(),
+          updated_at = now(),
+          payload_json = coalesce(payload_json, '{}'::jsonb) || $2::jsonb
+      where id = $1
+    `,
+    [taskId, JSON.stringify({ result, completedAt: new Date().toISOString() })],
+  );
+
+  await pool.query(
+    `
+      update workflow_runs
+      set payload_json = coalesce(payload_json, '{}'::jsonb) || $2::jsonb,
+          updated_at = now()
+      where id = $1
+    `,
+    [workflowRunId, JSON.stringify({ lastServiceTaskTopic: topic, lastServiceTaskResult: result })],
+  );
+
+  await insertAuditEvent(pool, workItemId, 'task.completed', 'worker-service-task', {
+    taskId,
+    taskType: `service:${topic}`,
+    workflowRunId,
+    topic,
+  });
+}
+
+async function failServiceTask(
+  pool: Pool,
+  taskId: string,
+  workItemId: string,
+  workflowRunId: string,
+  topic: ServiceTaskTopic,
+  message: string,
+) {
+  await pool.query(
+    `
+      update tasks
+      set status = 'failed',
+          completed_at = now(),
+          updated_at = now(),
+          payload_json = coalesce(payload_json, '{}'::jsonb) || $2::jsonb
+      where id = $1
+    `,
+    [taskId, JSON.stringify({ error: message, failedAt: new Date().toISOString() })],
+  );
+
+  await pool.query(
+    `
+      update workflow_runs
+      set current_step_key = $2,
+          current_step_type = 'user',
+          payload_json = coalesce(payload_json, '{}'::jsonb) || $3::jsonb,
+          updated_at = now()
+      where id = $1
+    `,
+    [workflowRunId, getWorkflowRunTarget('new').stepKey, JSON.stringify({ lastFailedServiceTaskTopic: topic, lastFailedServiceTaskMessage: message })],
+  );
+
+  await insertAuditEvent(pool, workItemId, 'task.failed', 'worker-service-task', {
+    taskId,
+    taskType: `service:${topic}`,
+    workflowRunId,
+    topic,
+    message,
+  });
 }
 
 async function downloadSourceYaml(fileId: string, outPath: string) {
@@ -238,4 +464,36 @@ function sanitizeFilename(name: string) {
 function buildPdfFilename(sourceName: string) {
   const base = path.basename(sourceName, path.extname(sourceName));
   return `${sanitizeFilename(base)}-api-spec.pdf`;
+}
+
+function getServiceTaskTitle(topic: ServiceTaskTopic) {
+  switch (topic) {
+    case 'intake.classify':
+      return 'Classify intake';
+    case 'artifact.render-pdf':
+      return 'Generate or refresh PDF';
+    default:
+      return topic;
+  }
+}
+
+function getWorkflowRunTarget(status: string): {
+  runStatus: 'running' | 'completed';
+  stepKey: string;
+  stepType: 'user' | 'gateway' | 'end';
+} {
+  switch (status) {
+    case 'new':
+      return { runStatus: 'running', stepKey: 'UserTask_Triage', stepType: 'user' };
+    case 'triaged':
+      return { runStatus: 'running', stepKey: 'UserTask_WorkInProgress', stepType: 'user' };
+    case 'in_progress':
+      return { runStatus: 'running', stepKey: 'UserTask_Review', stepType: 'user' };
+    case 'review':
+      return { runStatus: 'running', stepKey: 'Gateway_ReviewApproved', stepType: 'gateway' };
+    case 'done':
+      return { runStatus: 'completed', stepKey: 'EndEvent_Done', stepType: 'end' };
+    default:
+      return { runStatus: 'running', stepKey: 'UserTask_Triage', stepType: 'user' };
+  }
 }

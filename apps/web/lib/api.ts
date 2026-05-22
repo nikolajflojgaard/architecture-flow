@@ -12,6 +12,11 @@ export type WorkItem = {
   assignedTo: string | null;
   createdAt: string;
   updatedAt: string;
+  activeWorkflowRunId?: string | null;
+  activeWorkflowRunStatus?: string | null;
+  activeWorkflowStepKey?: string | null;
+  activeWorkflowStepType?: string | null;
+  processInstanceId?: string | null;
 };
 
 export type AuditEvent = {
@@ -48,11 +53,15 @@ export type WorkflowTask = {
   workItemId: string;
   workflowRunId: string | null;
   taskType: string;
+  title?: string | null;
   assignedTo: string | null;
   status: string;
   payload: Record<string, unknown> | null;
   dueAt: string | null;
+  externalRef?: string | null;
+  completedAt?: string | null;
   createdAt: string;
+  updatedAt?: string;
 };
 
 export const workflowStatuses = ['new', 'triaged', 'in_progress', 'review', 'done'] as const;
