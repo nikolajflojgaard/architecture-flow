@@ -1,25 +1,21 @@
 {
-  "name": "@architecture-flow/worker",
+  "name": "@architecture-flow/intake-sync",
   "private": true,
   "version": "0.1.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
   "scripts": {
-    "dev": "tsx watch src/main.ts",
-    "sync:intake": "tsx src/drive-intake.ts",
-    "service-task": "tsx src/run-service-task.ts",
-    "render:pdf": "tsx src/render-openapi-pdf.ts",
     "build": "tsc -p tsconfig.json",
     "lint": "echo 'lint not wired yet'",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@architecture-flow/intake-sync": "workspace:*",
     "@architecture-flow/shared": "workspace:*",
     "pg": "^8.16.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.17",
     "@types/pg": "^8.15.2",
-    "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   }
 }

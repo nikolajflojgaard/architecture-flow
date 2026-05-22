@@ -2,9 +2,10 @@ import Link from 'next/link';
 import { getIntakeSources, getWorkItems } from '../lib/api';
 
 const nextSlices = [
-  'Stand up BPMN + workflow state orchestration',
-  'Add source metadata enrichment from folder and file patterns',
-  'Move worker sync core into a shared internal package',
+  'Choose first deployment target and write the deployment bootstrap',
+  'Add linting / formatting / typechecking baseline cleanup',
+  'Build the pipeline board',
+  'Define the OpenClaw integration boundary',
 ];
 
 const statusOrder = ['all', 'new', 'triaged', 'in_progress', 'review', 'done'] as const;
@@ -64,7 +65,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         <div className="notice success">Intake sync started. Refresh in a moment if you expect new items.</div>
       ) : null}
       {resolvedSearchParams.sync === 'error' ? (
-        <div className="notice error">Intake sync failed. The API shell is reachable, but the worker path needs attention.</div>
+        <div className="notice error">Intake sync failed. Check the API logs and the shared intake sync path.</div>
       ) : null}
 
       <section className="dashboard-grid top-grid">

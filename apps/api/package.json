@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@architecture-flow/intake-sync": "workspace:*",
     "@architecture-flow/shared": "workspace:*",
     "@nestjs/common": "^11.1.6",
     "@nestjs/core": "^11.1.6",

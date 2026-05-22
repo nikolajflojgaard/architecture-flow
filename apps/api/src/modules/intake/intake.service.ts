@@ -1,10 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { execFile } from 'node:child_process';
-import path from 'node:path';
-import { promisify } from 'node:util';
+import { runDriveIntakeSync } from '@architecture-flow/intake-sync';
 import { DatabaseService } from '../../services/database.service';
-
-const execFileAsync = promisify(execFile);
 
 @Injectable()
 export class IntakeService {
@@ -61,23 +57,18 @@ export class IntakeService {
   }
 
   async runSync() {
-    const repoRoot = path.resolve(process.cwd(), '..', '..');
-    const env = {
-      ...process.env,
-      DATABASE_URL: process.env.DATABASE_URL,
-      GOOGLE_DRIVE_ACCOUNT: process.env.GOOGLE_DRIVE_ACCOUNT,
-    };
-
-    const { stdout, stderr } = await execFileAsync(
-      'pnpm',
-      ['--filter', '@architecture-flow/worker', 'sync:intake'],
-      { cwd: repoRoot, env },
-    );
+    const summary = await runDriveIntakeSync();
 
     return {
-      ok: true,
-      stdout: stdout.trim(),
-      stderr: stderr.trim(),
+      ...summary,
+      stdout: summary.sources
+        .map((source) =>
+          source.skipped
+            ? `${source.displayName}: skipped (${source.skipped})`
+            : `${source.displayName}: scanned ${source.scanned}, discovered ${source.discovered}, enriched ${source.enriched}`,
+        )
+        .join('\n'),
+      stderr: '',
     };
   }
 }
