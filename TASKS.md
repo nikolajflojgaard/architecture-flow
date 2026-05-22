@@ -117,7 +117,7 @@ Legend:
 
 ## New tasks discovered during build
 
-- [ ] Add source metadata enrichment rules (customer/domain inference from folder/file patterns)
+- [x] Add source metadata enrichment rules (customer/domain inference from folder/file patterns)
 - [ ] Move worker sync core into a shared internal package instead of API shell process execution
 - [ ] Add API-side auth/guard around manual sync before exposing it beyond local dev
 
@@ -133,9 +133,8 @@ Legend:
 
 Build next in this order:
 
-1. source metadata enrichment
-2. move worker sync core into a shared package
-3. choose first deployment target and add deployment bootstrap
-4. linting / formatting / typechecking baseline
-5. pipeline board
-6. OpenClaw integration boundary
+1. move worker sync core into a shared package
+2. choose first deployment target and add deployment bootstrap
+3. linting / formatting / typechecking baseline
+4. pipeline board
+5. OpenClaw integration boundary

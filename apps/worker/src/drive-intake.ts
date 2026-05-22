@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import crypto from 'node:crypto';
 import { Pool } from 'pg';
+import { inferIntakeMetadata } from '@architecture-flow/shared';
 
 const execFileAsync = promisify(execFile);
 
@@ -56,17 +57,21 @@ async function main() {
 
       const files = await listFolderFiles(folderId);
       let discovered = 0;
+      let enriched = 0;
 
       for (const file of files) {
         const result = await upsertWorkItem(source, file);
         if (result.discovered) {
           discovered += 1;
-          await insertIntakeEvent(source.id, result.workItemId, file);
-          await insertAuditEvent(result.workItemId, source, file);
+          await insertIntakeEvent(source.id, result.workItemId, file, result.inferred);
+          await insertAuditEvent(result.workItemId, source, file, result.inferred);
+        } else if (result.metadataChanged) {
+          enriched += 1;
+          await insertMetadataRefreshAuditEvent(result.workItemId, source, file, result.inferred);
         }
       }
 
-      console.log(`${source.displayName}: scanned ${files.length}, discovered ${discovered}`);
+      console.log(`${source.displayName}: scanned ${files.length}, discovered ${discovered}, enriched ${enriched}`);
     }
   } finally {
     await pool.end();
@@ -127,11 +132,56 @@ async function listFolderFiles(folderId: string): Promise<DriveEntry[]> {
   return entries.filter((entry) => entry.mimeType !== 'application/vnd.google-apps.folder');
 }
 
-async function upsertWorkItem(source: IntakeSource, file: DriveEntry): Promise<{ workItemId: string; discovered: boolean }> {
-  const existing = await pool.query<{ id: string }>('select id from work_items where source_file_id = $1 limit 1', [file.id]);
+async function upsertWorkItem(
+  source: IntakeSource,
+  file: DriveEntry,
+): Promise<{ workItemId: string; discovered: boolean; metadataChanged: boolean; inferred: ReturnType<typeof inferIntakeMetadata> }> {
+  const existing = await pool.query<{
+    id: string;
+    customer: string | null;
+    domain: string | null;
+    priority: string;
+    sourceType: string;
+    title: string;
+    sourceFolder: string;
+    sourceLink: string | null;
+  }>(
+    `
+      select
+        id,
+        customer,
+        domain,
+        priority,
+        source_type as "sourceType",
+        title,
+        source_folder as "sourceFolder",
+        source_link as "sourceLink"
+      from work_items
+      where source_file_id = $1
+      limit 1
+    `,
+    [file.id],
+  );
 
-  if (existing.rowCount) {
-    const workItemId = existing.rows[0].id;
+  const current = existing.rows[0] ?? null;
+  const inferred = inferIntakeMetadata({
+    sourceFolder: source.displayName,
+    title: file.name,
+    existingCustomer: current?.customer ?? null,
+    existingDomain: current?.domain ?? null,
+    existingPriority: current?.priority ?? null,
+  });
+
+  if (current) {
+    const metadataChanged =
+      current.title !== file.name ||
+      current.sourceFolder !== source.displayName ||
+      current.sourceLink !== (file.webViewLink ?? null) ||
+      current.customer !== inferred.customer ||
+      current.domain !== inferred.domain ||
+      current.priority !== inferred.priority ||
+      current.sourceType !== (inferred.sourceType ?? 'drive-file');
+
     await pool.query(
       `
         update work_items
@@ -139,29 +189,59 @@ async function upsertWorkItem(source: IntakeSource, file: DriveEntry): Promise<{
           title = $2,
           source_folder = $3,
           source_link = $4,
+          customer = $5,
+          domain = $6,
+          priority = $7,
+          source_type = $8,
           updated_at = now()
         where id = $1
       `,
-      [workItemId, file.name, source.displayName, file.webViewLink ?? null],
+      [
+        current.id,
+        file.name,
+        source.displayName,
+        file.webViewLink ?? null,
+        inferred.customer,
+        inferred.domain,
+        inferred.priority,
+        inferred.sourceType ?? 'drive-file',
+      ],
     );
-    return { workItemId, discovered: false };
+
+    return { workItemId: current.id, discovered: false, metadataChanged, inferred };
   }
 
   const workItemId = crypto.randomUUID();
   await pool.query(
     `
       insert into work_items (
-        id, title, source_type, source_folder, source_file_id, source_link, workflow_status, priority
+        id, title, source_type, source_folder, source_file_id, source_link, customer, domain, workflow_status, priority
       )
-      values ($1,$2,$3,$4,$5,$6,$7,$8)
+      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
     `,
-    [workItemId, file.name, 'drive-file', source.displayName, file.id, file.webViewLink ?? null, 'new', inferPriority(file.name)],
+    [
+      workItemId,
+      file.name,
+      inferred.sourceType ?? 'drive-file',
+      source.displayName,
+      file.id,
+      file.webViewLink ?? null,
+      inferred.customer,
+      inferred.domain,
+      'new',
+      inferred.priority,
+    ],
   );
 
-  return { workItemId, discovered: true };
+  return { workItemId, discovered: true, metadataChanged: true, inferred };
 }
 
-async function insertIntakeEvent(intakeSourceId: string, workItemId: string, file: DriveEntry) {
+async function insertIntakeEvent(
+  intakeSourceId: string,
+  workItemId: string,
+  file: DriveEntry,
+  inferred: ReturnType<typeof inferIntakeMetadata>,
+) {
   await pool.query(
     `
       insert into intake_events (id, intake_source_id, work_item_id, source_file_id, event_type, payload_json)
@@ -174,12 +254,23 @@ async function insertIntakeEvent(intakeSourceId: string, workItemId: string, fil
       workItemId,
       file.id,
       'discovered',
-      JSON.stringify({ name: file.name, mimeType: file.mimeType, modifiedTime: file.modifiedTime ?? null, webViewLink: file.webViewLink ?? null }),
+      JSON.stringify({
+        name: file.name,
+        mimeType: file.mimeType,
+        modifiedTime: file.modifiedTime ?? null,
+        webViewLink: file.webViewLink ?? null,
+        inferred,
+      }),
     ],
   );
 }
 
-async function insertAuditEvent(workItemId: string, source: IntakeSource, file: DriveEntry) {
+async function insertAuditEvent(
+  workItemId: string,
+  source: IntakeSource,
+  file: DriveEntry,
+  inferred: ReturnType<typeof inferIntakeMetadata>,
+) {
   await pool.query(
     `
       insert into audit_events (id, work_item_id, event_type, actor, payload_json)
@@ -190,13 +281,42 @@ async function insertAuditEvent(workItemId: string, source: IntakeSource, file: 
       workItemId,
       'intake.discovered',
       'drive-sync',
-      JSON.stringify({ sourceKey: source.sourceKey, displayName: source.displayName, fileId: file.id, fileName: file.name }),
+      JSON.stringify({
+        sourceKey: source.sourceKey,
+        displayName: source.displayName,
+        fileId: file.id,
+        fileName: file.name,
+        inferred,
+      }),
     ],
   );
 }
 
-function inferPriority(name: string) {
-  return name.toLowerCase().endsWith('.yaml') || name.toLowerCase().endsWith('.yml') ? 'high' : 'normal';
+async function insertMetadataRefreshAuditEvent(
+  workItemId: string,
+  source: IntakeSource,
+  file: DriveEntry,
+  inferred: ReturnType<typeof inferIntakeMetadata>,
+) {
+  await pool.query(
+    `
+      insert into audit_events (id, work_item_id, event_type, actor, payload_json)
+      values ($1,$2,$3,$4,$5::jsonb)
+    `,
+    [
+      crypto.randomUUID(),
+      workItemId,
+      'intake.metadata_refreshed',
+      'drive-sync',
+      JSON.stringify({
+        sourceKey: source.sourceKey,
+        displayName: source.displayName,
+        fileId: file.id,
+        fileName: file.name,
+        inferred,
+      }),
+    ],
+  );
 }
 
 async function driveSearch(queryText: string, filter: string): Promise<DriveEntry[]> {

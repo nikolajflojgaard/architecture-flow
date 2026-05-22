@@ -5,7 +5,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import crypto from 'node:crypto';
 import { Pool } from 'pg';
-import { serviceTaskTopics, type ServiceTaskTopic } from '@architecture-flow/shared';
+import { inferIntakeMetadata, serviceTaskTopics, type ServiceTaskTopic } from '@architecture-flow/shared';
 
 const execFileAsync = promisify(execFile);
 const databaseUrl = process.env.DATABASE_URL;
@@ -59,22 +59,25 @@ async function classifyIntake(pool: Pool, workItemId: string) {
     throw new Error(`Work item ${workItemId} not found`);
   }
 
-  const lowerTitle = workItem.title.toLowerCase();
-  const isYaml = lowerTitle.endsWith('.yaml') || lowerTitle.endsWith('.yml');
-  const inferred = {
-    sourceType: isYaml && workItem.sourceFolder === 'API spec drop/YAML' ? 'yaml-drop' : workItem.sourceType,
-    isApiRelated: isYaml || workItem.sourceFolder === 'API spec drop/YAML',
-    suggestedPriority: isYaml ? 'high' : workItem.priority,
-  };
+  const inferred = inferIntakeMetadata({
+    sourceFolder: workItem.sourceFolder,
+    title: workItem.title,
+    existingCustomer: workItem.customer,
+    existingDomain: workItem.domain,
+    existingPriority: workItem.priority,
+  });
 
   await pool.query(
     `
       update work_items
-      set priority = $2,
+      set source_type = $2,
+          customer = $3,
+          domain = $4,
+          priority = $5,
           updated_at = now()
       where id = $1
     `,
-    [workItemId, inferred.suggestedPriority],
+    [workItemId, inferred.sourceType ?? workItem.sourceType, inferred.customer, inferred.domain, inferred.priority],
   );
 
   await insertAuditEvent(pool, workItemId, 'intake.classified', 'worker-service-task', {
