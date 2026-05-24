@@ -121,13 +121,13 @@ What is still fake / soft:
 - [~] Pipeline board
   - [x] Define board columns from real workflow states, not made-up UI labels
   - [x] Show item count per column
-  - [ ] Support drag/drop or explicit move actions
+  - [x] Support drag/drop or explicit move actions
   - [ ] Surface blocked reason and waiting-review owner inline
   - [x] Clicking a card opens the work item detail view
 - [x] Artifact list/view
 - [x] Audit trail view
 - [ ] Add comments panel with create/reply flow
-- [ ] Add owner assignment control
+- [x] Add owner assignment control
 - [ ] Add empty/loading/error states worth looking at
 
 ## 7. PDF artifact flow
@@ -230,7 +230,7 @@ What is still fake / soft:
 ### Slice 2 — finish the operator view
 
 4. finish pipeline board interactions (drag/drop or explicit move actions)
-5. add owner assignment + blocked reason visibility
+5. add blocked reason + waiting-review visibility
 6. add failed-job visibility on work item detail
 
 ### Slice 3 — define the AI boundary before building AI buttons

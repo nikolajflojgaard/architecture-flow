@@ -70,6 +70,16 @@ export class WorkItemsController {
     return this.workItemsService.updateWorkflowStatus(id, status, actor);
   }
 
+  @Patch(":id/assignment")
+  async updateAssignment(
+    @Param("id") id: string,
+    @Body("assignedTo") assignedTo: string | null,
+    @CurrentUser() user: AuthUser | null,
+  ) {
+    const actor = user?.email ?? user?.name ?? "system";
+    return this.workItemsService.updateAssignment(id, assignedTo, actor);
+  }
+
   @Post(":id/tasks/:taskId/complete")
   async completeTask(
     @Param("id") id: string,

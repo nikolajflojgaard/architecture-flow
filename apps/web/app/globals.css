@@ -285,6 +285,12 @@ pre {
   margin-top: 2px;
 }
 
+.pipeline-card-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .pipeline-owner-badge {
   max-width: 100%;
 }

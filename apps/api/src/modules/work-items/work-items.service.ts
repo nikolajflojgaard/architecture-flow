@@ -87,6 +87,7 @@ type WorkItemRow = {
   id: string;
   title: string;
   status: WorkflowStatus;
+  assignedTo?: string | null;
 };
 
 @Injectable()
@@ -308,6 +309,41 @@ export class WorkItemsService {
       await this.databaseService.query("rollback");
       throw error;
     }
+
+    return {
+      item: (await this.getWorkItem(id)).item,
+      changed: true,
+    };
+  }
+
+  async updateAssignment(id: string, assignedTo: string | null, actor: string) {
+    const normalizedAssignedTo =
+      typeof assignedTo === "string" ? assignedTo.trim() || null : null;
+    const current = await this.requireWorkItemRow(id);
+
+    if ((current.assignedTo ?? null) === normalizedAssignedTo) {
+      return {
+        item: (await this.getWorkItem(id)).item,
+        changed: false,
+      };
+    }
+
+    await this.databaseService.query(
+      `
+        update work_items
+        set assigned_to = $2,
+            updated_at = now()
+        where id = $1
+      `,
+      [id, normalizedAssignedTo],
+    );
+
+    await this.insertAuditEvent(id, "work_item_assignment_changed", actor, {
+      from: current.assignedTo ?? null,
+      to: normalizedAssignedTo,
+      title: current.title,
+      source: "manual-assignment-update",
+    });
 
     return {
       item: (await this.getWorkItem(id)).item,
@@ -746,7 +782,7 @@ export class WorkItemsService {
   private async requireWorkItemRow(id: string) {
     const result = await this.databaseService.query<WorkItemRow>(
       `
-        select id, title, workflow_status as status
+        select id, title, workflow_status as status, assigned_to as "assignedTo"
         from work_items
         where id = $1
         limit 1

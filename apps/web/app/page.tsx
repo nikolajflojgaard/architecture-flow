@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getIntakeSources, getWorkItems, workflowStatuses } from "../lib/api";
+import { getViewer } from "../lib/auth";
 
 const nextSlices = [
   "Choose first deployment target and write the deployment bootstrap",
@@ -22,6 +23,7 @@ type HomePageProps = {
     status?: string;
     sync?: string;
     statusChange?: string;
+    assignmentChange?: string;
   }>;
 };
 
@@ -31,9 +33,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     statusOrder.find((status) => status === resolvedSearchParams.status) ??
     "all";
 
-  const [allWorkItems, intakeSources] = await Promise.all([
+  const [allWorkItems, intakeSources, viewer] = await Promise.all([
     getWorkItems(undefined, 100),
     getIntakeSources(),
+    getViewer(),
   ]);
 
   const workItems =
@@ -100,6 +103,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       {resolvedSearchParams.statusChange === "error" ? (
         <div className="notice error">
           Workflow status update failed. Check the API/auth path and try again.
+        </div>
+      ) : null}
+      {resolvedSearchParams.assignmentChange === "ok" ? (
+        <div className="notice success">Assignment updated.</div>
+      ) : null}
+      {resolvedSearchParams.assignmentChange === "error" ? (
+        <div className="notice error">
+          Assignment update failed. Check the API/auth path and try again.
         </div>
       ) : null}
 
@@ -261,6 +272,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 <div className="pipeline-card-list">
                   {column.items.map((item) => {
                     const nextStatus = getNextStatus(item.status);
+                    const viewerEmail = viewer.user?.email ?? null;
+                    const canAssignToMe = Boolean(
+                      viewerEmail && item.assignedTo !== viewerEmail,
+                    );
+                    const canUnassign = Boolean(item.assignedTo);
 
                     return (
                       <article key={item.id} className="pipeline-card">
@@ -313,6 +329,44 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                             </button>
                           </form>
                         ) : null}
+                        <div className="pipeline-card-actions-row">
+                          {canAssignToMe ? (
+                            <form
+                              action={`/api/work-items/${item.id}/assignment`}
+                              method="post"
+                              className="pipeline-card-action"
+                            >
+                              <input
+                                type="hidden"
+                                name="assignedTo"
+                                value={viewerEmail ?? ""}
+                              />
+                              <input type="hidden" name="returnTo" value="/" />
+                              <button
+                                type="submit"
+                                className="button-secondary button-small"
+                              >
+                                Assign to me
+                              </button>
+                            </form>
+                          ) : null}
+                          {canUnassign ? (
+                            <form
+                              action={`/api/work-items/${item.id}/assignment`}
+                              method="post"
+                              className="pipeline-card-action"
+                            >
+                              <input type="hidden" name="assignedTo" value="" />
+                              <input type="hidden" name="returnTo" value="/" />
+                              <button
+                                type="submit"
+                                className="button-secondary button-small"
+                              >
+                                Unassign
+                              </button>
+                            </form>
+                          ) : null}
+                        </div>
                       </article>
                     );
                   })}
