@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { getIntakeSources, getWorkItems } from "../lib/api";
+import { getIntakeSources, getWorkItems, workflowStatuses } from "../lib/api";
 
 const nextSlices = [
   "Choose first deployment target and write the deployment bootstrap",
-  "Add linting / formatting / typechecking baseline cleanup",
   "Build the pipeline board",
   "Define the OpenClaw integration boundary",
+  "Add owner assignment + blocked visibility",
 ];
 
 const statusOrder = [
@@ -30,17 +30,26 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     statusOrder.find((status) => status === resolvedSearchParams.status) ??
     "all";
 
-  const [workItems, intakeSources] = await Promise.all([
-    getWorkItems(activeStatus, 50),
+  const [allWorkItems, intakeSources] = await Promise.all([
+    getWorkItems(undefined, 100),
     getIntakeSources(),
   ]);
+
+  const workItems =
+    activeStatus === "all"
+      ? allWorkItems
+      : allWorkItems.filter((item) => item.status === activeStatus);
 
   const totalItems = workItems.length;
   const highPriorityCount = workItems.filter(
     (item) => item.priority === "high",
   ).length;
   const unassignedCount = workItems.filter((item) => !item.assignedTo).length;
-  const statusCounts = buildStatusCounts(workItems);
+  const statusCounts = buildStatusCounts(allWorkItems);
+  const boardColumns = workflowStatuses.map((status) => ({
+    status,
+    items: allWorkItems.filter((item) => item.status === status),
+  }));
 
   return (
     <main className="page-shell">
@@ -208,6 +217,78 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         </section>
       </section>
 
+      <section className="panel pipeline-panel">
+        <div className="panel-header pipeline-header">
+          <div>
+            <h2>Pipeline board</h2>
+            <p className="panel-copy">
+              Real workflow-state columns driven by current work-item status,
+              not a fake PM board.
+            </p>
+          </div>
+          <span className="pipeline-total">
+            {allWorkItems.length} total items
+          </span>
+        </div>
+
+        <div className="pipeline-board" aria-label="Pipeline board">
+          {boardColumns.map((column) => (
+            <section key={column.status} className="pipeline-column">
+              <div className="pipeline-column-header">
+                <div>
+                  <p className="eyebrow">{labelizeStatus(column.status)}</p>
+                  <h3>{column.items.length}</h3>
+                </div>
+                <span className={`badge status-${column.status}`}>
+                  {labelizeStatus(column.status)}
+                </span>
+              </div>
+
+              {column.items.length === 0 ? (
+                <div className="empty-state compact-empty pipeline-empty">
+                  <p>No items in this state.</p>
+                </div>
+              ) : (
+                <div className="pipeline-card-list">
+                  {column.items.map((item) => (
+                    <Link
+                      key={item.id}
+                      href={`/work-items/${item.id}`}
+                      className="pipeline-card"
+                    >
+                      <div className="pipeline-card-top">
+                        <strong>{item.title}</strong>
+                        <span className={`badge priority-${item.priority}`}>
+                          {item.priority}
+                        </span>
+                      </div>
+                      <p className="work-item-meta">
+                        {item.customer ?? "Unknown customer"} ·{" "}
+                        {item.domain ?? "Unknown domain"}
+                      </p>
+                      <p className="work-item-meta muted">
+                        {item.sourceFolder} · updated{" "}
+                        {formatDate(item.updatedAt)}
+                      </p>
+                      <div className="pipeline-card-meta">
+                        <span className="badge pipeline-owner-badge">
+                          {item.assignedTo ?? "Unassigned"}
+                        </span>
+                        {item.activeWorkflowStepKey ? (
+                          <span className="muted small-text">
+                            {labelizeStep(item.activeWorkflowStepKey)}
+                          </span>
+                        ) : null}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
+          ))}
+        </div>
+      </section>
+
       <section className="dashboard-grid bottom-grid">
         <section className="panel">
           <h2>What this slice already proves</h2>
@@ -220,6 +301,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <li>
               Work item detail pages can now move items through the workflow
               instead of only showing status.
+            </li>
+            <li>
+              The pipeline board now mirrors the real workflow states directly
+              from the backend.
             </li>
           </ul>
         </section>
@@ -242,6 +327,15 @@ function buildStatusCounts(items: Awaited<ReturnType<typeof getWorkItems>>) {
     accumulator[item.status] = (accumulator[item.status] ?? 0) + 1;
     return accumulator;
   }, {});
+}
+
+function labelizeStep(value: string) {
+  return value
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replaceAll("_", " ")
+    .replaceAll("User Task", "")
+    .replaceAll("Gateway", "")
+    .trim();
 }
 
 function labelizeStatus(value: string) {

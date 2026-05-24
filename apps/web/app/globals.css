@@ -208,6 +208,82 @@ pre {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.pipeline-panel {
+  margin-bottom: 20px;
+}
+
+.pipeline-header {
+  margin-bottom: 18px;
+}
+
+.pipeline-total {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.pipeline-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(220px, 1fr));
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.pipeline-column {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 220px;
+}
+
+.pipeline-column-header,
+.pipeline-card-top,
+.pipeline-card-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.pipeline-column-header {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.pipeline-column-header h3 {
+  margin: 6px 0 0;
+  font-size: 1.9rem;
+}
+
+.pipeline-card-list {
+  display: grid;
+  gap: 10px;
+}
+
+.pipeline-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel-subtle);
+}
+
+.pipeline-card:hover {
+  border-color: rgba(56, 189, 248, 0.4);
+  transform: translateY(-1px);
+}
+
+.pipeline-owner-badge {
+  max-width: 100%;
+}
+
+.pipeline-empty {
+  min-height: 84px;
+}
+
 .secondary-detail-grid {
   margin-top: 20px;
 }
@@ -436,6 +512,7 @@ pre {
   .bottom-grid,
   .detail-grid,
   .meta-grid,
+  .pipeline-board,
   .work-item-card,
   .app-topbar {
     grid-template-columns: 1fr;
