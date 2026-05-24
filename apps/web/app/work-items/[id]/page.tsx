@@ -43,6 +43,11 @@ export default async function WorkItemPage({
   }
 
   const latestEvent = auditEvents[0] ?? null;
+  const failureEvents = auditEvents.filter((event) =>
+    isFailureEvent(event.eventType),
+  );
+  const latestFailure = failureEvents[0] ?? null;
+  const openTasks = tasks.filter((task) => task.status === "open");
   const canRenderPdf =
     item.sourceType === "drive-file" && /\.ya?ml$/i.test(item.title);
 
@@ -104,6 +109,11 @@ export default async function WorkItemPage({
       {resolvedSearchParams.classified === "error" ? (
         <div className="notice error">Intake classification job failed.</div>
       ) : null}
+      {latestFailure ? (
+        <div className="notice error">
+          Latest failure: {getFailureHeadline(latestFailure)}
+        </div>
+      ) : null}
 
       <section className="dashboard-grid detail-grid">
         <section className="panel">
@@ -149,42 +159,48 @@ export default async function WorkItemPage({
                   : "No events"
               }
             />
+            <MetaBlock
+              label="Latest failure"
+              value={
+                latestFailure
+                  ? formatFailureTime(latestFailure.createdAt)
+                  : "No failed jobs"
+              }
+            />
           </div>
 
           <div style={{ marginTop: 20 }}>
             <h3 style={{ marginBottom: 12 }}>Current user tasks</h3>
-            {tasks.filter((task) => task.status === "open").length === 0 ? (
+            {openTasks.length === 0 ? (
               <p className="muted small-text">
                 No open workflow tasks for this item.
               </p>
             ) : (
               <div className="timeline-list">
-                {tasks
-                  .filter((task) => task.status === "open")
-                  .map((task) => (
-                    <article key={task.id} className="timeline-card">
-                      <div className="timeline-card-top">
-                        <strong>{getTaskTitle(task)}</strong>
-                        <span className="badge status-review">open</span>
-                      </div>
-                      <p className="work-item-meta">
-                        Type: {labelizeStatus(task.taskType)}
-                      </p>
-                      <p className="work-item-meta muted">
-                        {task.assignedTo ?? "Unassigned"} · created{" "}
-                        {formatDate(task.createdAt)}
-                      </p>
-                      <form
-                        action={`/api/work-items/${item.id}/tasks/${task.id}/complete`}
-                        method="post"
-                        style={{ marginTop: 12 }}
-                      >
-                        <button type="submit" className="button-primary">
-                          {getCompletionLabel(task)}
-                        </button>
-                      </form>
-                    </article>
-                  ))}
+                {openTasks.map((task) => (
+                  <article key={task.id} className="timeline-card">
+                    <div className="timeline-card-top">
+                      <strong>{getTaskTitle(task)}</strong>
+                      <span className="badge status-review">open</span>
+                    </div>
+                    <p className="work-item-meta">
+                      Type: {labelizeStatus(task.taskType)}
+                    </p>
+                    <p className="work-item-meta muted">
+                      {task.assignedTo ?? "Unassigned"} · created{" "}
+                      {formatDate(task.createdAt)}
+                    </p>
+                    <form
+                      action={`/api/work-items/${item.id}/tasks/${task.id}/complete`}
+                      method="post"
+                      style={{ marginTop: 12 }}
+                    >
+                      <button type="submit" className="button-primary">
+                        {getCompletionLabel(task)}
+                      </button>
+                    </form>
+                  </article>
+                ))}
               </div>
             )}
           </div>
@@ -234,6 +250,63 @@ export default async function WorkItemPage({
             ) : null}
           </div>
         </section>
+      </section>
+
+      <section className="panel" style={{ marginTop: 20 }}>
+        <div className="section-title-row">
+          <div>
+            <h2>Failed jobs</h2>
+            <p className="muted small-text">
+              Real operator-visible failures from audit events.
+            </p>
+          </div>
+          <span
+            className={`badge ${failureEvents.length ? "status-blocked" : "status-done"}`}
+          >
+            {failureEvents.length} failure
+            {failureEvents.length === 1 ? "" : "s"}
+          </span>
+        </div>
+
+        {failureEvents.length === 0 ? (
+          <div className="empty-state compact-empty">
+            <p>No failed jobs recorded for this work item.</p>
+          </div>
+        ) : (
+          <div className="timeline-list">
+            {failureEvents.map((event) => (
+              <article key={event.id} className="timeline-card failure-card">
+                <div className="timeline-card-top">
+                  <strong>{getFailureHeadline(event)}</strong>
+                  <span className="muted small-text">
+                    {formatDate(event.createdAt)}
+                  </span>
+                </div>
+                <p className="work-item-meta">
+                  Actor: {event.actor ?? "system"}
+                </p>
+                <p className="work-item-meta muted">
+                  {getFailureSummary(event)}
+                </p>
+                {getFailureDetails(event).length > 0 ? (
+                  <ul className="plain-list compact-list">
+                    {getFailureDetails(event).map((detail) => (
+                      <li key={detail}>{detail}</li>
+                    ))}
+                  </ul>
+                ) : null}
+                {event.payload ? (
+                  <details className="failure-payload-toggle">
+                    <summary>Raw payload</summary>
+                    <pre className="payload-block">
+                      {JSON.stringify(event.payload, null, 2)}
+                    </pre>
+                  </details>
+                ) : null}
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="dashboard-grid detail-grid secondary-detail-grid">
@@ -371,4 +444,60 @@ function getCompletionLabel(task: WorkflowTask) {
     default:
       return "Complete task";
   }
+}
+
+function isFailureEvent(eventType: string) {
+  return eventType === "task.failed" || eventType === "pdf.render_failed";
+}
+
+function getFailureHeadline(event: {
+  eventType: string;
+  payload: Record<string, unknown> | null;
+}) {
+  const message = getPayloadString(event.payload, "message");
+  if (message) {
+    return message;
+  }
+
+  return labelizeStatus(event.eventType);
+}
+
+function getFailureSummary(event: {
+  eventType: string;
+  payload: Record<string, unknown> | null;
+}) {
+  const taskType = getPayloadString(event.payload, "taskType");
+  const taskId = getPayloadString(event.payload, "taskId");
+  const workflowRunId = getPayloadString(event.payload, "workflowRunId");
+
+  const parts = [
+    taskType ? `Task: ${labelizeStatus(taskType)}` : null,
+    taskId ? `Task ID: ${taskId}` : null,
+    workflowRunId ? `Run: ${workflowRunId}` : null,
+  ].filter(Boolean);
+
+  return parts.length > 0
+    ? parts.join(" · ")
+    : "Check the payload for exact worker/job context.";
+}
+
+function getFailureDetails(event: { payload: Record<string, unknown> | null }) {
+  return ["error", "reason", "stderr", "jobId", "externalRef"]
+    .map((key) => {
+      const value = getPayloadString(event.payload, key);
+      return value ? `${labelizeStatus(key)}: ${value}` : null;
+    })
+    .filter((value): value is string => Boolean(value));
+}
+
+function getPayloadString(
+  payload: Record<string, unknown> | null,
+  key: string,
+) {
+  const value = payload?.[key];
+  return typeof value === "string" && value ? value : null;
+}
+
+function formatFailureTime(value: string) {
+  return formatDate(value);
 }

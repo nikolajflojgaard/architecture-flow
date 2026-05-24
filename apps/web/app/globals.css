@@ -384,6 +384,13 @@ pre {
   gap: 10px;
 }
 
+.section-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
 .work-item-card,
 .source-card,
 .timeline-card {
@@ -429,6 +436,10 @@ pre {
 .status-review,
 .status-done {
   color: #bae6fd;
+}
+
+.status-blocked {
+  color: #fca5a5;
 }
 
 .priority-high {
@@ -542,6 +553,21 @@ pre {
   white-space: pre-wrap;
   word-break: break-word;
   color: #cbd5e1;
+}
+
+.failure-card {
+  border-color: rgba(248, 113, 113, 0.35);
+  background: rgba(127, 29, 29, 0.18);
+}
+
+.failure-payload-toggle {
+  margin-top: 10px;
+}
+
+.failure-payload-toggle summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.84rem;
 }
 
 .back-link {

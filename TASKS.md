@@ -230,8 +230,8 @@ What is still fake / soft:
 ### Slice 2 — finish the operator view
 
 4. finish pipeline board interactions (drag/drop or explicit move actions)
-5. add failed-job visibility on work item detail
-6. add comments panel with create/reply flow
+5. add comments panel with create/reply flow
+6. add review handoff path instead of DB-only task completion
 
 ### Slice 3 — define the AI boundary before building AI buttons
 
