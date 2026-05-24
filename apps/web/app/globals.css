@@ -291,6 +291,31 @@ pre {
   gap: 8px;
 }
 
+.pipeline-signal {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-size: 0.84rem;
+}
+
+.pipeline-signal strong {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.review-signal {
+  background: rgba(56, 189, 248, 0.08);
+  color: #dbeafe;
+}
+
+.blocked-signal {
+  background: rgba(248, 113, 113, 0.1);
+  color: #fecaca;
+}
+
 .pipeline-owner-badge {
   max-width: 100%;
 }

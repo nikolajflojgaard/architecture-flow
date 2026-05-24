@@ -124,6 +124,10 @@ export class WorkItemsService {
         work_items.assigned_to as "assignedTo",
         work_items.created_at as "createdAt",
         work_items.updated_at as "updatedAt",
+        review_task.assigned_to as "waitingReviewAssignee",
+        review_task.title as "waitingReviewTaskTitle",
+        blocking_event.event_type as "blockingEventType",
+        blocking_event.payload_json ->> 'message' as "blockingMessage",
         workflow_run.id as "activeWorkflowRunId",
         workflow_run.status as "activeWorkflowRunStatus",
         workflow_run.current_step_key as "activeWorkflowStepKey",
@@ -143,6 +147,23 @@ export class WorkItemsService {
         order by workflow_runs.started_at desc
         limit 1
       ) workflow_run on true
+      left join lateral (
+        select assigned_to, title
+        from tasks
+        where tasks.work_item_id = work_items.id
+          and tasks.status = 'open'
+          and tasks.task_type = 'review_and_approve'
+        order by tasks.created_at desc
+        limit 1
+      ) review_task on true
+      left join lateral (
+        select event_type, payload_json
+        from audit_events
+        where audit_events.work_item_id = work_items.id
+          and event_type in ('task.failed', 'pdf.render_failed')
+        order by audit_events.created_at desc
+        limit 1
+      ) blocking_event on true
       ${where.length ? `where ${where.join(" and ")}` : ""}
       order by work_items.created_at desc
       limit ${limitPlaceholder}
@@ -174,6 +195,10 @@ export class WorkItemsService {
           work_items.assigned_to as "assignedTo",
           work_items.created_at as "createdAt",
           work_items.updated_at as "updatedAt",
+          review_task.assigned_to as "waitingReviewAssignee",
+          review_task.title as "waitingReviewTaskTitle",
+          blocking_event.event_type as "blockingEventType",
+          blocking_event.payload_json ->> 'message' as "blockingMessage",
           workflow_run.id as "activeWorkflowRunId",
           workflow_run.status as "activeWorkflowRunStatus",
           workflow_run.current_step_key as "activeWorkflowStepKey",
@@ -193,6 +218,23 @@ export class WorkItemsService {
           order by workflow_runs.started_at desc
           limit 1
         ) workflow_run on true
+        left join lateral (
+          select assigned_to, title
+          from tasks
+          where tasks.work_item_id = work_items.id
+            and tasks.status = 'open'
+            and tasks.task_type = 'review_and_approve'
+          order by tasks.created_at desc
+          limit 1
+        ) review_task on true
+        left join lateral (
+          select event_type, payload_json
+          from audit_events
+          where audit_events.work_item_id = work_items.id
+            and event_type in ('task.failed', 'pdf.render_failed')
+          order by audit_events.created_at desc
+          limit 1
+        ) blocking_event on true
         where work_items.id = $1
         limit 1
       `,

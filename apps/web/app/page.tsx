@@ -308,6 +308,27 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                               </span>
                             ) : null}
                           </div>
+                          {item.status === "review" ? (
+                            <div className="pipeline-signal review-signal">
+                              <strong>Waiting review</strong>
+                              <span>
+                                {item.waitingReviewAssignee ??
+                                  item.assignedTo ??
+                                  "Unassigned"}
+                              </span>
+                            </div>
+                          ) : null}
+                          {item.blockingEventType ? (
+                            <div className="pipeline-signal blocked-signal">
+                              <strong>
+                                {labelizeStatus(item.blockingEventType)}
+                              </strong>
+                              <span>
+                                {item.blockingMessage ??
+                                  "Latest failure event needs attention."}
+                              </span>
+                            </div>
+                          ) : null}
                         </Link>
                         {nextStatus ? (
                           <form

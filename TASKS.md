@@ -118,11 +118,11 @@ What is still fake / soft:
 - [x] Inbox page
 - [x] Work item detail page
 - [x] Workflow-state actions from the UI
-- [~] Pipeline board
+- [x] Pipeline board
   - [x] Define board columns from real workflow states, not made-up UI labels
   - [x] Show item count per column
   - [x] Support drag/drop or explicit move actions
-  - [ ] Surface blocked reason and waiting-review owner inline
+  - [x] Surface blocked reason and waiting-review owner inline
   - [x] Clicking a card opens the work item detail view
 - [x] Artifact list/view
 - [x] Audit trail view
@@ -230,8 +230,8 @@ What is still fake / soft:
 ### Slice 2 — finish the operator view
 
 4. finish pipeline board interactions (drag/drop or explicit move actions)
-5. add blocked reason + waiting-review visibility
-6. add failed-job visibility on work item detail
+5. add failed-job visibility on work item detail
+6. add comments panel with create/reply flow
 
 ### Slice 3 — define the AI boundary before building AI buttons
 

@@ -10,6 +10,10 @@ export type WorkItem = {
   status: string;
   priority: string;
   assignedTo: string | null;
+  waitingReviewAssignee?: string | null;
+  waitingReviewTaskTitle?: string | null;
+  blockingEventType?: string | null;
+  blockingMessage?: string | null;
   createdAt: string;
   updatedAt: string;
   activeWorkflowRunId?: string | null;
