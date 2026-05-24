@@ -1,0 +1,105 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: architecture_flow
+      POSTGRES_USER: architecture_flow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - architecture_flow_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U architecture_flow -d architecture_flow"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - architecture_flow_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - architecture_flow_minio:/data
+
+  flowable:
+    image: flowable/flowable-rest:7.1.0
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/architecture_flow
+      SPRING_DATASOURCE_USERNAME: architecture_flow
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      FLOWABLE_REST_APP_ADMIN_USER_ID: ${FLOWABLE_ADMIN_USER}
+      FLOWABLE_REST_APP_ADMIN_PASSWORD: ${FLOWABLE_ADMIN_PASSWORD}
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      flowable:
+        condition: service_started
+      minio:
+        condition: service_started
+    environment:
+      PORT: 4000
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      GOOGLE_DRIVE_ACCOUNT: ${GOOGLE_DRIVE_ACCOUNT}
+      GOOGLE_DRIVE_ROOT_NAME: ${GOOGLE_DRIVE_ROOT_NAME}
+      FLOWABLE_BASE_URL: ${FLOWABLE_BASE_URL}
+      FLOWABLE_ADMIN_USER: ${FLOWABLE_ADMIN_USER}
+      FLOWABLE_ADMIN_PASSWORD: ${FLOWABLE_ADMIN_PASSWORD}
+      FLOWABLE_PROCESS_DEFINITION_KEY: ${FLOWABLE_PROCESS_DEFINITION_KEY}
+      AUTH_MODE: ${AUTH_MODE}
+      CHROME_BIN: ${CHROME_BIN}
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+    environment:
+      PORT: 3000
+      AUTH_MODE: ${AUTH_MODE}
+      ARCHITECTURE_FLOW_API_URL: ${ARCHITECTURE_FLOW_API_URL}
+      ARCHITECTURE_FLOW_DEV_USER_EMAIL: ${ARCHITECTURE_FLOW_DEV_USER_EMAIL}
+      ARCHITECTURE_FLOW_DEV_USER_NAME: ${ARCHITECTURE_FLOW_DEV_USER_NAME}
+      ARCHITECTURE_FLOW_DEV_USER_ROLES: ${ARCHITECTURE_FLOW_DEV_USER_ROLES}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+
+volumes:
+  architecture_flow_postgres:
+  architecture_flow_redis:
+  architecture_flow_minio:

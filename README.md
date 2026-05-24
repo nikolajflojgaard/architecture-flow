@@ -67,6 +67,7 @@ docker-compose.yml
 - `docs/architecture-flow-v1.md`
 - `docs/architecture-flow-product-spec.md`
 - `docs/development-bootstrap.md`
+- `docs/deployment-bootstrap.md`
 - `TASKS.md`
 
 ## Working principles

@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
     "sync:intake": "tsx src/drive-intake.ts",
     "service-task": "tsx src/run-service-task.ts",
     "render:pdf": "tsx src/render-openapi-pdf.ts",

@@ -183,12 +183,14 @@ What is still fake / soft:
 
 - [ ] Choose first deployment target (single VPS vs Docker host vs Coolify/CapRover)
   - recommended default: start with one boring Docker host/VPS
-- [ ] Define production runtime topology (web, api, worker, postgres, redis, minio, flowable)
-- [ ] Add production compose/deployment manifests
-- [ ] Add production environment variable template and secrets checklist
+- [x] Choose first deployment target (single VPS vs Docker host vs Coolify/CapRover)
+  - chosen default: one boring Docker host/VPS first
+- [x] Define production runtime topology (web, api, worker, postgres, redis, minio, flowable)
+- [x] Add production compose/deployment manifests
+- [x] Add production environment variable template and secrets checklist
 - [ ] Add persistent storage/backup plan for Postgres and MinIO
 - [ ] Add reverse proxy / TLS entrypoint
-- [ ] Add deployment bootstrap doc
+- [x] Add deployment bootstrap doc
 - [ ] Add update/rollback procedure
 - [ ] Add basic uptime/health monitoring for deployed services
 
