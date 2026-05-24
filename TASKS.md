@@ -97,7 +97,7 @@ What is still fake / soft:
 - [x] Set up Authentik integration design
 - [x] Define roles: admin / architect / reviewer
 - [x] Protect web app and API routes
-- [ ] Add route-level permission matrix doc
+- [~] Add route-level permission matrix doc
 - [ ] Add service-to-service auth story for worker -> API / Flowable callbacks
 
 ## 5. Drive intake
@@ -109,7 +109,7 @@ What is still fake / soft:
 - [x] Persist intake events into DB
 - [x] Expose intake status in API/UI
 - [x] Add manual re-sync action
-- [ ] Add API-side auth/guard around manual sync before exposing it beyond local dev
+- [x] Add API-side auth/guard around manual sync before exposing it beyond local dev
 - [ ] Add last-sync summary card to the web UI
 - [ ] Add explicit duplicate/skip reason visibility in UI
 

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getAuthProxyHeaders } from "../../../_lib/auth-proxy";
 
 export async function POST(
   request: Request,
@@ -23,12 +24,13 @@ export async function POST(
       );
     }
 
+    const authHeaders = await getAuthProxyHeaders({
+      "content-type": "application/json",
+    });
     const response = await fetch(`${baseUrl}/v1/work-items/${id}/status`, {
       method: "PATCH",
       cache: "no-store",
-      headers: {
-        "content-type": "application/json",
-      },
+      headers: authHeaders,
       body: JSON.stringify({ status }),
     });
 

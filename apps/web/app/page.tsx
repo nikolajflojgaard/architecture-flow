@@ -97,6 +97,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           path.
         </div>
       ) : null}
+      {resolvedSearchParams.sync === "forbidden" ? (
+        <div className="notice error">
+          Intake sync requires architect or admin access.
+        </div>
+      ) : null}
       {resolvedSearchParams.statusChange === "ok" ? (
         <div className="notice success">Workflow status updated.</div>
       ) : null}

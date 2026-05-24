@@ -1,5 +1,7 @@
 import { Controller, Get, Inject, Post, UseGuards } from "@nestjs/common";
 import { AuthGuard } from "../auth/auth.guard";
+import { Roles } from "../auth/roles.decorator";
+import { RolesGuard } from "../auth/roles.guard";
 import { IntakeService } from "./intake.service";
 
 @Controller("/v1/intake-sources")
@@ -15,6 +17,8 @@ export class IntakeController {
   }
 
   @Post("/sync")
+  @UseGuards(RolesGuard)
+  @Roles("admin", "architect")
   async runSync() {
     return this.intakeService.runSync();
   }
