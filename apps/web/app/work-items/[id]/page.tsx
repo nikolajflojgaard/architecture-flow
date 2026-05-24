@@ -22,6 +22,7 @@ export default async function WorkItemPage({
     classified?: string;
     commentCreate?: string;
     replyTo?: string;
+    reviewDecision?: string;
   }>;
 }) {
   const { id } = await params;
@@ -116,6 +117,21 @@ export default async function WorkItemPage({
       {resolvedSearchParams.taskComplete === "error" ? (
         <div className="notice error">
           Workflow task completion failed. Refresh and try again.
+        </div>
+      ) : null}
+      {resolvedSearchParams.reviewDecision === "approve" ? (
+        <div className="notice success">
+          Review approved. Work item moved to done.
+        </div>
+      ) : null}
+      {resolvedSearchParams.reviewDecision === "request_changes" ? (
+        <div className="notice success">
+          Changes requested. Work item moved back to in progress.
+        </div>
+      ) : null}
+      {resolvedSearchParams.reviewDecision === "error" ? (
+        <div className="notice error">
+          Review decision failed. Refresh and try again.
         </div>
       ) : null}
       {resolvedSearchParams.classified === "ok" ? (
@@ -213,15 +229,49 @@ export default async function WorkItemPage({
                       {task.assignedTo ?? "Unassigned"} · created{" "}
                       {formatDate(task.createdAt)}
                     </p>
-                    <form
-                      action={`/api/work-items/${item.id}/tasks/${task.id}/complete`}
-                      method="post"
-                      style={{ marginTop: 12 }}
-                    >
-                      <button type="submit" className="button-primary">
-                        {getCompletionLabel(task)}
-                      </button>
-                    </form>
+                    {item.status === "review" &&
+                    task.taskType === "review_and_approve" ? (
+                      <form
+                        action={`/api/work-items/${item.id}/tasks/${task.id}/review-decision`}
+                        method="post"
+                        className="review-decision-form"
+                      >
+                        <textarea
+                          name="note"
+                          rows={3}
+                          className="comment-textarea review-note-textarea"
+                          placeholder="Optional review note for approval or requested changes."
+                        />
+                        <div className="action-row">
+                          <button
+                            type="submit"
+                            name="decision"
+                            value="approve"
+                            className="button-primary"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="submit"
+                            name="decision"
+                            value="request_changes"
+                            className="button-secondary"
+                          >
+                            Request changes
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <form
+                        action={`/api/work-items/${item.id}/tasks/${task.id}/complete`}
+                        method="post"
+                        style={{ marginTop: 12 }}
+                      >
+                        <button type="submit" className="button-primary">
+                          {getCompletionLabel(task, item.status)}
+                        </button>
+                      </form>
+                    )}
                   </article>
                 ))}
               </div>
@@ -556,14 +606,16 @@ function getTaskTitle(task: WorkflowTask) {
   return labelizeStatus(task.taskType);
 }
 
-function getCompletionLabel(task: WorkflowTask) {
+function getCompletionLabel(task: WorkflowTask, workItemStatus?: string) {
   switch (task.taskType) {
     case "triage":
       return "Complete triage";
     case "produce_artifacts":
       return "Mark artifacts ready for review";
     case "review_and_approve":
-      return "Approve and move forward";
+      return workItemStatus === "in_progress"
+        ? "Send to review"
+        : "Approve and move forward";
     default:
       return "Complete task";
   }

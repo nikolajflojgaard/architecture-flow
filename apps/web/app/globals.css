@@ -576,6 +576,16 @@ pre {
   margin-top: 18px;
 }
 
+.review-decision-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.review-note-textarea {
+  min-height: 84px;
+}
+
 .comment-form-header {
   display: flex;
   justify-content: space-between;

@@ -128,7 +128,7 @@ What is still fake / soft:
 - [x] Audit trail view
 - [x] Add comments panel with create/reply flow
 - [x] Add owner assignment control
-- [ ] Add empty/loading/error states worth looking at
+- [~] Add empty/loading/error states worth looking at
 
 ## 7. PDF artifact flow
 
@@ -231,7 +231,7 @@ What is still fake / soft:
 
 4. finish pipeline board interactions (drag/drop or explicit move actions)
 5. add comments panel with create/reply flow
-6. add review handoff path instead of DB-only task completion
+6. add empty/loading/error states worth looking at
 
 ### Slice 3 — define the AI boundary before building AI buttons
 

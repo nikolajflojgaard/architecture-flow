@@ -66,13 +66,13 @@ const workflowTaskByStatus: Record<
   },
   in_progress: {
     taskType: "review_and_approve",
-    title: "Review and approve",
+    title: "Hand off for review",
     nextStatus: "review",
     stepKey: "UserTask_Review",
   },
   review: {
     taskType: "review_and_approve",
-    title: "Approve review outcome",
+    title: "Review decision",
     nextStatus: "done",
     stepKey: "Gateway_ReviewApproved",
   },
@@ -603,6 +603,160 @@ export class WorkItemsService {
         definition.nextStatus,
         actor,
       );
+
+      await this.databaseService.query("commit");
+    } catch (error) {
+      await this.databaseService.query("rollback");
+      throw error;
+    }
+
+    return {
+      item: (await this.getWorkItem(workItemId)).item,
+      tasks: (await this.listTasks(workItemId)).items,
+    };
+  }
+
+  async submitReviewDecision(
+    workItemId: string,
+    taskId: string,
+    decision: string,
+    actor: string,
+    note?: string | null,
+  ) {
+    if (decision !== "approve" && decision !== "request_changes") {
+      throw new BadRequestException(`Unsupported review decision: ${decision}`);
+    }
+
+    const taskResult = await this.databaseService.query<{
+      id: string;
+      workItemId: string;
+      workflowRunId: string | null;
+      taskType: UserTaskType;
+      status: TaskStatus;
+    }>(
+      `
+        select
+          id,
+          work_item_id as "workItemId",
+          workflow_run_id as "workflowRunId",
+          task_type as "taskType",
+          status
+        from tasks
+        where id = $1 and work_item_id = $2
+        limit 1
+      `,
+      [taskId, workItemId],
+    );
+
+    const task = taskResult.rows[0];
+    if (!task) {
+      throw new NotFoundException("Task not found");
+    }
+
+    if (task.status !== "open") {
+      throw new BadRequestException("Only open tasks can be completed");
+    }
+
+    if (task.taskType !== "review_and_approve") {
+      throw new BadRequestException("Task is not a review decision task");
+    }
+
+    const workItem = await this.requireWorkItemRow(workItemId);
+    if (workItem.status !== "review") {
+      throw new BadRequestException(
+        "Review decisions are only allowed while the work item is in review",
+      );
+    }
+
+    const normalizedNote =
+      typeof note === "string" ? note.trim() || null : null;
+    const nextStatus: WorkflowStatus =
+      decision === "approve" ? "done" : "in_progress";
+
+    await this.databaseService.query("begin");
+
+    try {
+      const run = await this.ensureWorkflowRunForStatus(
+        workItemId,
+        workItem.status,
+      );
+
+      await this.databaseService.query(
+        `
+          update tasks
+          set workflow_run_id = $2,
+              status = 'completed',
+              completed_at = now(),
+              updated_at = now(),
+              payload_json = coalesce(payload_json, '{}'::jsonb)
+                || jsonb_build_object(
+                  'reviewDecision', $3,
+                  'reviewedBy', $4,
+                  'reviewedAt', now(),
+                  'reviewNote', $5
+                )
+          where id = $1
+        `,
+        [taskId, run.id, decision, actor, normalizedNote],
+      );
+
+      await this.insertAuditEvent(workItemId, `review.${decision}`, actor, {
+        taskId,
+        taskType: task.taskType,
+        workflowRunId: run.id,
+        fromStatus: workItem.status,
+        toStatus: nextStatus,
+        note: normalizedNote,
+      });
+
+      await this.databaseService.query(
+        `
+          update work_items
+          set workflow_status = $2,
+              updated_at = now()
+          where id = $1
+        `,
+        [workItemId, nextStatus],
+      );
+
+      await this.insertAuditEvent(
+        workItemId,
+        "workflow_status_changed",
+        actor,
+        {
+          from: workItem.status,
+          to: nextStatus,
+          taskId,
+          taskType: task.taskType,
+          workflowRunId: run.id,
+          reviewDecision: decision,
+        },
+      );
+
+      if (normalizedNote) {
+        await this.databaseService.query(
+          `
+            insert into comments (
+              id,
+              work_item_id,
+              parent_comment_id,
+              author,
+              body,
+              created_at
+            ) values ($1, $2, null, $3, $4, now())
+          `,
+          [
+            crypto.randomUUID(),
+            workItemId,
+            actor,
+            decision === "approve"
+              ? `Review approved: ${normalizedNote}`
+              : `Changes requested: ${normalizedNote}`,
+          ],
+        );
+      }
+
+      await this.syncTasksForStatus(workItemId, run.id, nextStatus, actor);
 
       await this.databaseService.query("commit");
     } catch (error) {

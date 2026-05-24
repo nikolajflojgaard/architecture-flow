@@ -95,6 +95,24 @@ export class WorkItemsController {
     return this.workItemsService.completeTask(id, taskId, actor);
   }
 
+  @Post(":id/tasks/:taskId/review-decision")
+  async submitReviewDecision(
+    @Param("id") id: string,
+    @Param("taskId") taskId: string,
+    @Body("decision") decision: string,
+    @Body("note") note: string | null,
+    @CurrentUser() user: AuthUser | null,
+  ) {
+    const actor = user?.email ?? user?.name ?? "system";
+    return this.workItemsService.submitReviewDecision(
+      id,
+      taskId,
+      decision,
+      actor,
+      note,
+    );
+  }
+
   @Post(":id/comments")
   async createComment(
     @Param("id") id: string,
