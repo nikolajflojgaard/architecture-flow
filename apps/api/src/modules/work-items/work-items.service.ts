@@ -90,6 +90,15 @@ type WorkItemRow = {
   assignedTo?: string | null;
 };
 
+type CommentRow = {
+  id: string;
+  workItemId: string;
+  parentCommentId: string | null;
+  author: string;
+  body: string;
+  createdAt: string;
+};
+
 @Injectable()
 export class WorkItemsService {
   constructor(
@@ -278,6 +287,31 @@ export class WorkItemsService {
     };
   }
 
+  async listComments(workItemId: string) {
+    await this.requireWorkItemRow(workItemId);
+
+    const result = await this.databaseService.query<CommentRow>(
+      `
+        select
+          id,
+          work_item_id as "workItemId",
+          parent_comment_id as "parentCommentId",
+          author,
+          body,
+          created_at as "createdAt"
+        from comments
+        where work_item_id = $1
+        order by created_at asc
+      `,
+      [workItemId],
+    );
+
+    return {
+      items: result.rows,
+      count: result.rowCount,
+    };
+  }
+
   async listAuditEvents(workItemId: string) {
     const result = await this.databaseService.query(
       `
@@ -389,6 +423,82 @@ export class WorkItemsService {
 
     return {
       item: (await this.getWorkItem(id)).item,
+      changed: true,
+    };
+  }
+
+  async createComment(
+    workItemId: string,
+    body: string,
+    author: string,
+    parentCommentId?: string | null,
+  ) {
+    const normalizedBody = body.trim();
+    if (!normalizedBody) {
+      throw new BadRequestException("Comment body is required");
+    }
+
+    const workItem = await this.requireWorkItemRow(workItemId);
+    const normalizedParentId =
+      typeof parentCommentId === "string"
+        ? parentCommentId.trim() || null
+        : null;
+
+    let parentComment: CommentRow | null = null;
+    if (normalizedParentId) {
+      const parentResult = await this.databaseService.query<CommentRow>(
+        `
+          select
+            id,
+            work_item_id as "workItemId",
+            parent_comment_id as "parentCommentId",
+            author,
+            body,
+            created_at as "createdAt"
+          from comments
+          where id = $1 and work_item_id = $2
+          limit 1
+        `,
+        [normalizedParentId, workItemId],
+      );
+
+      parentComment = parentResult.rows[0] ?? null;
+      if (!parentComment) {
+        throw new NotFoundException("Parent comment not found");
+      }
+    }
+
+    const commentId = crypto.randomUUID();
+    await this.databaseService.query(
+      `
+        insert into comments (
+          id,
+          work_item_id,
+          parent_comment_id,
+          author,
+          body,
+          created_at
+        ) values ($1, $2, $3, $4, $5, now())
+      `,
+      [commentId, workItemId, normalizedParentId, author, normalizedBody],
+    );
+
+    await this.insertAuditEvent(workItemId, "comment.created", author, {
+      commentId,
+      parentCommentId: normalizedParentId,
+      title: workItem.title,
+      preview: normalizedBody.slice(0, 160),
+    });
+
+    return {
+      item: (await this.getWorkItem(workItemId)).item,
+      comment: {
+        id: commentId,
+        workItemId,
+        parentCommentId: normalizedParentId,
+        author,
+        body: normalizedBody,
+      },
       changed: true,
     };
   }

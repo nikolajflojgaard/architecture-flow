@@ -2,10 +2,13 @@ import Link from "next/link";
 import {
   getArtifacts,
   getAuditEvents,
+  getComments,
   getTasks,
   getWorkItem,
+  type Comment,
   type WorkflowTask,
 } from "../../../lib/api";
+import { getViewer } from "../../../lib/auth";
 
 export default async function WorkItemPage({
   params,
@@ -17,16 +20,21 @@ export default async function WorkItemPage({
     statusChange?: string;
     taskComplete?: string;
     classified?: string;
+    commentCreate?: string;
+    replyTo?: string;
   }>;
 }) {
   const { id } = await params;
   const resolvedSearchParams = (await searchParams) ?? {};
-  const [item, auditEvents, artifacts, tasks] = await Promise.all([
-    getWorkItem(id),
-    getAuditEvents(id),
-    getArtifacts(id),
-    getTasks(id),
-  ]);
+  const [item, auditEvents, artifacts, tasks, comments, viewer] =
+    await Promise.all([
+      getWorkItem(id),
+      getAuditEvents(id),
+      getArtifacts(id),
+      getTasks(id),
+      getComments(id),
+      getViewer(),
+    ]);
 
   if (!item) {
     return (
@@ -48,6 +56,13 @@ export default async function WorkItemPage({
   );
   const latestFailure = failureEvents[0] ?? null;
   const openTasks = tasks.filter((task) => task.status === "open");
+  const replyTarget =
+    typeof resolvedSearchParams.replyTo === "string"
+      ? (comments.find(
+          (comment) => comment.id === resolvedSearchParams.replyTo,
+        ) ?? null)
+      : null;
+  const commentThreads = buildCommentThreads(comments);
   const canRenderPdf =
     item.sourceType === "drive-file" && /\.ya?ml$/i.test(item.title);
 
@@ -108,6 +123,14 @@ export default async function WorkItemPage({
       ) : null}
       {resolvedSearchParams.classified === "error" ? (
         <div className="notice error">Intake classification job failed.</div>
+      ) : null}
+      {resolvedSearchParams.commentCreate === "ok" ? (
+        <div className="notice success">Comment posted.</div>
+      ) : null}
+      {resolvedSearchParams.commentCreate === "error" ? (
+        <div className="notice error">
+          Comment could not be posted. Check the body and try again.
+        </div>
       ) : null}
       {latestFailure ? (
         <div className="notice error">
@@ -309,6 +332,106 @@ export default async function WorkItemPage({
         )}
       </section>
 
+      <section className="panel" style={{ marginTop: 20 }}>
+        <div className="section-title-row">
+          <div>
+            <h2>Comments</h2>
+            <p className="muted small-text">
+              Keep review notes on the work item instead of hiding them in chat.
+            </p>
+          </div>
+          <span className="badge">
+            {comments.length} comment{comments.length === 1 ? "" : "s"}
+          </span>
+        </div>
+
+        <form
+          action={`/api/work-items/${item.id}/comments`}
+          method="post"
+          className="comment-form"
+        >
+          <input
+            type="hidden"
+            name="parentCommentId"
+            value={replyTarget?.id ?? ""}
+          />
+          <div className="comment-form-header">
+            <strong>
+              {replyTarget
+                ? `Replying to ${replyTarget.author}`
+                : "Add comment"}
+            </strong>
+            <span className="muted small-text">
+              {viewer.user?.email ?? viewer.user?.name ?? "system"}
+            </span>
+          </div>
+          {replyTarget ? (
+            <div className="reply-target-card">
+              <p className="work-item-meta muted">{replyTarget.author}</p>
+              <p className="comment-body">{replyTarget.body}</p>
+              <Link
+                href={`/work-items/${item.id}`}
+                className="back-link inline-link"
+              >
+                Cancel reply
+              </Link>
+            </div>
+          ) : null}
+          <textarea
+            name="body"
+            rows={replyTarget ? 4 : 5}
+            className="comment-textarea"
+            placeholder={
+              replyTarget
+                ? "Write the reply that should live with the work item."
+                : "Write a comment that helps the next operator."
+            }
+            required
+          />
+          <div className="action-row">
+            <button type="submit" className="button-primary">
+              {replyTarget ? "Post reply" : "Post comment"}
+            </button>
+          </div>
+        </form>
+
+        {commentThreads.length === 0 ? (
+          <div className="empty-state compact-empty">
+            <p>No comments yet.</p>
+          </div>
+        ) : (
+          <div className="timeline-list" style={{ marginTop: 18 }}>
+            {commentThreads.map((comment) => (
+              <article
+                key={comment.id}
+                className={`timeline-card comment-card ${comment.parentCommentId ? "comment-reply-card" : ""}`}
+              >
+                <div className="timeline-card-top">
+                  <strong>{comment.author}</strong>
+                  <span className="muted small-text">
+                    {formatDate(comment.createdAt)}
+                  </span>
+                </div>
+                {comment.parentCommentId && comment.parentAuthor ? (
+                  <p className="work-item-meta muted">
+                    Reply to {comment.parentAuthor}
+                  </p>
+                ) : null}
+                <p className="comment-body">{comment.body}</p>
+                <div className="action-row">
+                  <Link
+                    href={`/work-items/${item.id}?replyTo=${comment.id}`}
+                    className="button-secondary"
+                  >
+                    Reply
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
       <section className="dashboard-grid detail-grid secondary-detail-grid">
         <section className="panel">
           <h2>Artifact chain</h2>
@@ -383,7 +506,7 @@ export default async function WorkItemPage({
           <li>
             Manual generation actions for KISS / final design / OpenAPI drafts
           </li>
-          <li>Comments and review handoff</li>
+          <li>Review handoff path instead of DB-only task completion</li>
         </ul>
       </section>
     </main>
@@ -500,4 +623,38 @@ function getPayloadString(
 
 function formatFailureTime(value: string) {
   return formatDate(value);
+}
+
+function buildCommentThreads(comments: Comment[]) {
+  const byId = new Map(comments.map((comment) => [comment.id, comment]));
+
+  return [...comments]
+    .sort((a, b) => {
+      if (a.parentCommentId === b.id) {
+        return 1;
+      }
+
+      if (b.parentCommentId === a.id) {
+        return -1;
+      }
+
+      const rootA = a.parentCommentId
+        ? (byId.get(a.parentCommentId)?.createdAt ?? a.createdAt)
+        : a.createdAt;
+      const rootB = b.parentCommentId
+        ? (byId.get(b.parentCommentId)?.createdAt ?? b.createdAt)
+        : b.createdAt;
+
+      if (rootA !== rootB) {
+        return rootA.localeCompare(rootB);
+      }
+
+      return a.createdAt.localeCompare(b.createdAt);
+    })
+    .map((comment) => ({
+      ...comment,
+      parentAuthor: comment.parentCommentId
+        ? (byId.get(comment.parentCommentId)?.author ?? null)
+        : null,
+    }));
 }

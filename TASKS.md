@@ -126,7 +126,7 @@ What is still fake / soft:
   - [x] Clicking a card opens the work item detail view
 - [x] Artifact list/view
 - [x] Audit trail view
-- [ ] Add comments panel with create/reply flow
+- [x] Add comments panel with create/reply flow
 - [x] Add owner assignment control
 - [ ] Add empty/loading/error states worth looking at
 

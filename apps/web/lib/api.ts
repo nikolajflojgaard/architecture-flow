@@ -31,6 +31,15 @@ export type AuditEvent = {
   createdAt: string;
 };
 
+export type Comment = {
+  id: string;
+  workItemId: string;
+  parentCommentId: string | null;
+  author: string;
+  body: string;
+  createdAt: string;
+};
+
 export type IntakeSource = {
   id: string;
   displayName: string;
@@ -181,6 +190,26 @@ export async function getTasks(workItemId: string): Promise<WorkflowTask[]> {
     }
 
     const payload = (await response.json()) as { items?: WorkflowTask[] };
+    return payload.items ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function getComments(workItemId: string): Promise<Comment[]> {
+  try {
+    const response = await fetch(
+      `${baseUrl}/v1/work-items/${workItemId}/comments`,
+      {
+        cache: "no-store",
+      },
+    );
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const payload = (await response.json()) as { items?: Comment[] };
     return payload.items ?? [];
   } catch {
     return [];

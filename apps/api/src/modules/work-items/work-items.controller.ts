@@ -60,6 +60,11 @@ export class WorkItemsController {
     return this.workItemsService.listTasks(id);
   }
 
+  @Get(":id/comments")
+  async listComments(@Param("id") id: string) {
+    return this.workItemsService.listComments(id);
+  }
+
   @Patch(":id/status")
   async updateWorkflowStatus(
     @Param("id") id: string,
@@ -88,6 +93,22 @@ export class WorkItemsController {
   ) {
     const actor = user?.email ?? user?.name ?? "system";
     return this.workItemsService.completeTask(id, taskId, actor);
+  }
+
+  @Post(":id/comments")
+  async createComment(
+    @Param("id") id: string,
+    @Body("body") body: string,
+    @Body("parentCommentId") parentCommentId: string | null,
+    @CurrentUser() user: AuthUser | null,
+  ) {
+    const author = user?.email ?? user?.name ?? "system";
+    return this.workItemsService.createComment(
+      id,
+      body,
+      author,
+      parentCommentId,
+    );
   }
 
   @Post(":id/classify-intake")
