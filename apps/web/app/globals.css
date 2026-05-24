@@ -276,8 +276,22 @@ pre {
   transform: translateY(-1px);
 }
 
+.pipeline-card-link {
+  display: grid;
+  gap: 10px;
+}
+
+.pipeline-card-action {
+  margin-top: 2px;
+}
+
 .pipeline-owner-badge {
   max-width: 100%;
+}
+
+.button-small {
+  padding: 8px 10px;
+  font-size: 0.84rem;
 }
 
 .pipeline-empty {

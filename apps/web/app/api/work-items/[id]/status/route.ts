@@ -11,10 +11,15 @@ export async function POST(
   try {
     const formData = await request.formData();
     const status = formData.get("status");
+    const returnTo = formData.get("returnTo");
+    const redirectTarget =
+      typeof returnTo === "string" && returnTo.startsWith("/")
+        ? returnTo
+        : `/work-items/${id}`;
 
     if (typeof status !== "string" || !status) {
       return NextResponse.redirect(
-        new URL(`/work-items/${id}?statusChange=error`, request.url),
+        new URL(`${redirectTarget}?statusChange=error`, request.url),
       );
     }
 
@@ -29,7 +34,7 @@ export async function POST(
 
     const state = response.ok ? "ok" : "error";
     return NextResponse.redirect(
-      new URL(`/work-items/${id}?statusChange=${state}`, request.url),
+      new URL(`${redirectTarget}?statusChange=${state}`, request.url),
     );
   } catch {
     return NextResponse.redirect(

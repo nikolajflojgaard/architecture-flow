@@ -21,6 +21,7 @@ type HomePageProps = {
   searchParams?: Promise<{
     status?: string;
     sync?: string;
+    statusChange?: string;
   }>;
 };
 
@@ -91,6 +92,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         <div className="notice error">
           Intake sync failed. Check the API logs and the shared intake sync
           path.
+        </div>
+      ) : null}
+      {resolvedSearchParams.statusChange === "ok" ? (
+        <div className="notice success">Workflow status updated.</div>
+      ) : null}
+      {resolvedSearchParams.statusChange === "error" ? (
+        <div className="notice error">
+          Workflow status update failed. Check the API/auth path and try again.
         </div>
       ) : null}
 
@@ -250,38 +259,63 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 </div>
               ) : (
                 <div className="pipeline-card-list">
-                  {column.items.map((item) => (
-                    <Link
-                      key={item.id}
-                      href={`/work-items/${item.id}`}
-                      className="pipeline-card"
-                    >
-                      <div className="pipeline-card-top">
-                        <strong>{item.title}</strong>
-                        <span className={`badge priority-${item.priority}`}>
-                          {item.priority}
-                        </span>
-                      </div>
-                      <p className="work-item-meta">
-                        {item.customer ?? "Unknown customer"} ·{" "}
-                        {item.domain ?? "Unknown domain"}
-                      </p>
-                      <p className="work-item-meta muted">
-                        {item.sourceFolder} · updated{" "}
-                        {formatDate(item.updatedAt)}
-                      </p>
-                      <div className="pipeline-card-meta">
-                        <span className="badge pipeline-owner-badge">
-                          {item.assignedTo ?? "Unassigned"}
-                        </span>
-                        {item.activeWorkflowStepKey ? (
-                          <span className="muted small-text">
-                            {labelizeStep(item.activeWorkflowStepKey)}
-                          </span>
+                  {column.items.map((item) => {
+                    const nextStatus = getNextStatus(item.status);
+
+                    return (
+                      <article key={item.id} className="pipeline-card">
+                        <Link
+                          href={`/work-items/${item.id}`}
+                          className="pipeline-card-link"
+                        >
+                          <div className="pipeline-card-top">
+                            <strong>{item.title}</strong>
+                            <span className={`badge priority-${item.priority}`}>
+                              {item.priority}
+                            </span>
+                          </div>
+                          <p className="work-item-meta">
+                            {item.customer ?? "Unknown customer"} ·{" "}
+                            {item.domain ?? "Unknown domain"}
+                          </p>
+                          <p className="work-item-meta muted">
+                            {item.sourceFolder} · updated{" "}
+                            {formatDate(item.updatedAt)}
+                          </p>
+                          <div className="pipeline-card-meta">
+                            <span className="badge pipeline-owner-badge">
+                              {item.assignedTo ?? "Unassigned"}
+                            </span>
+                            {item.activeWorkflowStepKey ? (
+                              <span className="muted small-text">
+                                {labelizeStep(item.activeWorkflowStepKey)}
+                              </span>
+                            ) : null}
+                          </div>
+                        </Link>
+                        {nextStatus ? (
+                          <form
+                            action={`/api/work-items/${item.id}/status`}
+                            method="post"
+                            className="pipeline-card-action"
+                          >
+                            <input
+                              type="hidden"
+                              name="status"
+                              value={nextStatus}
+                            />
+                            <input type="hidden" name="returnTo" value="/" />
+                            <button
+                              type="submit"
+                              className="button-secondary button-small"
+                            >
+                              Move to {labelizeStatus(nextStatus)}
+                            </button>
+                          </form>
                         ) : null}
-                      </div>
-                    </Link>
-                  ))}
+                      </article>
+                    );
+                  })}
                 </div>
               )}
             </section>
@@ -336,6 +370,18 @@ function labelizeStep(value: string) {
     .replaceAll("User Task", "")
     .replaceAll("Gateway", "")
     .trim();
+}
+
+function getNextStatus(status: string) {
+  const nextByStatus: Record<string, string | null> = {
+    new: "triaged",
+    triaged: "in_progress",
+    in_progress: "review",
+    review: "done",
+    done: null,
+  };
+
+  return nextByStatus[status] ?? null;
 }
 
 function labelizeStatus(value: string) {
