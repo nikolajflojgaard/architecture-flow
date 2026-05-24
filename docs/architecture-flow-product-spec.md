@@ -81,9 +81,11 @@ Simple internal login via SSO.
 ### 2. Inbox
 
 Purpose:
+
 - show newly detected work
 
 Must show:
+
 - title
 - source folder
 - detected time
@@ -91,6 +93,7 @@ Must show:
 - owner
 
 Must allow:
+
 - open work item
 - assign owner
 - mark triaged
@@ -98,9 +101,11 @@ Must allow:
 ### 3. Work item detail
 
 Purpose:
+
 - central operating view for one case
 
 Sections:
+
 - overview
 - source document links
 - workflow state
@@ -110,6 +115,7 @@ Sections:
 - audit log
 
 Actions:
+
 - generate KISS draft
 - generate final design draft
 - generate OpenAPI draft
@@ -120,9 +126,11 @@ Actions:
 ### 4. Pipeline board
 
 Purpose:
+
 - quick operational visibility
 
 Columns:
+
 - New
 - Triaged
 - In progress
@@ -133,9 +141,11 @@ Columns:
 ### 5. Admin
 
 Purpose:
+
 - manage system setup
 
 Sections:
+
 - watched folders
 - prompt/template settings
 - workflow definitions

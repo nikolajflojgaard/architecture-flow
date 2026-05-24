@@ -8,7 +8,7 @@
     "service-task": "tsx src/run-service-task.ts",
     "render:pdf": "tsx src/render-openapi-pdf.ts",
     "build": "tsc -p tsconfig.json",
-    "lint": "echo 'lint not wired yet'",
+    "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {

@@ -1,9 +1,11 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { DatabaseService } from '../../services/database.service';
+import { Inject, Injectable } from "@nestjs/common";
+import { DatabaseService } from "../../services/database.service";
 
 @Injectable()
 export class ArtifactsService {
-  constructor(@Inject(DatabaseService) private readonly databaseService: DatabaseService) {}
+  constructor(
+    @Inject(DatabaseService) private readonly databaseService: DatabaseService,
+  ) {}
 
   async listArtifactsForWorkItem(workItemId: string) {
     const result = await this.databaseService.query(

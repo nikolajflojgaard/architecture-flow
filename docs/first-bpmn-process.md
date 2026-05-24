@@ -33,13 +33,13 @@ The first job is to prove state ownership and workflow orchestration, not to cos
 
 ## State mapping
 
-| App status | BPMN step |
-| --- | --- |
-| `new` | start event / before triage |
-| `triaged` | triage user task completed |
+| App status    | BPMN step                           |
+| ------------- | ----------------------------------- |
+| `new`         | start event / before triage         |
+| `triaged`     | triage user task completed          |
 | `in_progress` | produce working artifacts user task |
-| `review` | review and approve user task |
-| `done` | end event |
+| `review`      | review and approve user task        |
+| `done`        | end event                           |
 
 ## Worker topics assumed by the BPMN file
 

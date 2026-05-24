@@ -1,7 +1,11 @@
-import Link from 'next/link';
-import { getArtifact, getWorkItem } from '../../../lib/api';
+import Link from "next/link";
+import { getArtifact, getWorkItem } from "../../../lib/api";
 
-export default async function ArtifactPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ArtifactPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
   const artifact = await getArtifact(id);
 
@@ -25,13 +29,17 @@ export default async function ArtifactPage({ params }: { params: Promise<{ id: s
     <main className="page-shell narrow-shell">
       <div className="detail-header-row">
         <div>
-          <Link href={workItem ? `/work-items/${workItem.id}` : '/'} className="back-link">
+          <Link
+            href={workItem ? `/work-items/${workItem.id}` : "/"}
+            className="back-link"
+          >
             ← Back
           </Link>
           <p className="eyebrow">Artifact</p>
           <h1 className="detail-title">{labelize(artifact.artifactType)}</h1>
           <p className="hero-copy detail-copy">
-            {workItem ? workItem.title : 'Unlinked work item'} · version {artifact.version}
+            {workItem ? workItem.title : "Unlinked work item"} · version{" "}
+            {artifact.version}
           </p>
         </div>
         <div className="detail-badges">
@@ -44,14 +52,28 @@ export default async function ArtifactPage({ params }: { params: Promise<{ id: s
         <section className="panel">
           <h2>Artifact metadata</h2>
           <div className="detail-list">
-            <DetailRow label="Artifact type" value={labelize(artifact.artifactType)} />
-            <DetailRow label="Storage backend" value={artifact.storageBackend} />
-            <DetailRow label="Storage path" value={artifact.storagePath ?? 'Not set'} />
-            <DetailRow label="Drive file ID" value={artifact.driveFileId ?? 'Not set'} />
+            <DetailRow
+              label="Artifact type"
+              value={labelize(artifact.artifactType)}
+            />
+            <DetailRow
+              label="Storage backend"
+              value={artifact.storageBackend}
+            />
+            <DetailRow
+              label="Storage path"
+              value={artifact.storagePath ?? "Not set"}
+            />
+            <DetailRow
+              label="Drive file ID"
+              value={artifact.driveFileId ?? "Not set"}
+            />
             <DetailRow label="Created" value={formatDate(artifact.createdAt)} />
           </div>
-          {artifact.storageBackend === 'local' && artifact.storagePath ? (
-            <p className="muted small-text">Local renderer output: {artifact.storagePath}</p>
+          {artifact.storageBackend === "local" && artifact.storagePath ? (
+            <p className="muted small-text">
+              Local renderer output: {artifact.storagePath}
+            </p>
           ) : null}
         </section>
 
@@ -61,8 +83,14 @@ export default async function ArtifactPage({ params }: { params: Promise<{ id: s
             <div className="detail-list">
               <DetailRow label="Title" value={workItem.title} />
               <DetailRow label="Status" value={labelize(workItem.status)} />
-              <DetailRow label="Customer" value={workItem.customer ?? 'Unknown customer'} />
-              <DetailRow label="Domain" value={workItem.domain ?? 'Unknown domain'} />
+              <DetailRow
+                label="Customer"
+                value={workItem.customer ?? "Unknown customer"}
+              />
+              <DetailRow
+                label="Domain"
+                value={workItem.domain ?? "Unknown domain"}
+              />
             </div>
           ) : (
             <div className="empty-state compact-empty">
@@ -85,12 +113,12 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 function labelize(value: string) {
-  return value.replaceAll('_', ' ');
+  return value.replaceAll("_", " ");
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat('en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
+  return new Intl.DateTimeFormat("en-GB", {
+    dateStyle: "medium",
+    timeStyle: "short",
   }).format(new Date(value));
 }

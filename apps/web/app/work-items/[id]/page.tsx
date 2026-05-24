@@ -1,18 +1,23 @@
-import Link from 'next/link';
+import Link from "next/link";
 import {
   getArtifacts,
   getAuditEvents,
   getTasks,
   getWorkItem,
   type WorkflowTask,
-} from '../../../lib/api';
+} from "../../../lib/api";
 
 export default async function WorkItemPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ rendered?: string; statusChange?: string; taskComplete?: string; classified?: string }>;
+  searchParams?: Promise<{
+    rendered?: string;
+    statusChange?: string;
+    taskComplete?: string;
+    classified?: string;
+  }>;
 }) {
   const { id } = await params;
   const resolvedSearchParams = (await searchParams) ?? {};
@@ -38,7 +43,8 @@ export default async function WorkItemPage({
   }
 
   const latestEvent = auditEvents[0] ?? null;
-  const canRenderPdf = item.sourceType === 'drive-file' && /\.ya?ml$/i.test(item.title);
+  const canRenderPdf =
+    item.sourceType === "drive-file" && /\.ya?ml$/i.test(item.title);
 
   return (
     <main className="page-shell narrow-shell">
@@ -50,37 +56,52 @@ export default async function WorkItemPage({
           <p className="eyebrow">Work item</p>
           <h1 className="detail-title">{item.title}</h1>
           <p className="hero-copy detail-copy">
-            {item.customer ?? 'Unknown customer'} · {item.domain ?? 'Unknown domain'}
+            {item.customer ?? "Unknown customer"} ·{" "}
+            {item.domain ?? "Unknown domain"}
           </p>
         </div>
         <div className="detail-badges">
-          <span className={`badge status-${item.status}`}>{labelizeStatus(item.status)}</span>
-          <span className={`badge priority-${item.priority}`}>{item.priority}</span>
+          <span className={`badge status-${item.status}`}>
+            {labelizeStatus(item.status)}
+          </span>
+          <span className={`badge priority-${item.priority}`}>
+            {item.priority}
+          </span>
         </div>
       </div>
 
-      {resolvedSearchParams.rendered === 'ok' ? (
-        <div className="notice success">PDF render finished. Refresh again if you want to confirm the newest artifact version in the list.</div>
+      {resolvedSearchParams.rendered === "ok" ? (
+        <div className="notice success">
+          PDF render finished. Refresh again if you want to confirm the newest
+          artifact version in the list.
+        </div>
       ) : null}
-      {resolvedSearchParams.rendered === 'error' ? (
-        <div className="notice error">PDF render failed. Check the latest audit event for the error message, then retry.</div>
+      {resolvedSearchParams.rendered === "error" ? (
+        <div className="notice error">
+          PDF render failed. Check the latest audit event for the error message,
+          then retry.
+        </div>
       ) : null}
-      {resolvedSearchParams.statusChange === 'ok' ? (
+      {resolvedSearchParams.statusChange === "ok" ? (
         <div className="notice success">Workflow status updated.</div>
       ) : null}
-      {resolvedSearchParams.statusChange === 'error' ? (
-        <div className="notice error">Workflow status update failed. Check the API/auth path and try again.</div>
+      {resolvedSearchParams.statusChange === "error" ? (
+        <div className="notice error">
+          Workflow status update failed. Check the API/auth path and try again.
+        </div>
       ) : null}
-      {resolvedSearchParams.taskComplete === 'ok' ? (
+      {resolvedSearchParams.taskComplete === "ok" ? (
         <div className="notice success">Workflow task completed.</div>
       ) : null}
-      {resolvedSearchParams.taskComplete === 'error' ? (
-        <div className="notice error">Workflow task completion failed. Refresh and try again.</div>
+      {resolvedSearchParams.taskComplete === "error" ? (
+        <div className="notice error">
+          Workflow task completion failed. Refresh and try again.
+        </div>
       ) : null}
-      {resolvedSearchParams.classified === 'ok' ? (
+      {resolvedSearchParams.classified === "ok" ? (
         <div className="notice success">Intake classification job ran.</div>
       ) : null}
-      {resolvedSearchParams.classified === 'error' ? (
+      {resolvedSearchParams.classified === "error" ? (
         <div className="notice error">Intake classification job failed.</div>
       ) : null}
 
@@ -88,38 +109,76 @@ export default async function WorkItemPage({
         <section className="panel">
           <h2>Workflow snapshot</h2>
           <div className="meta-grid">
-            <MetaBlock label="Assigned to" value={item.assignedTo ?? 'Unassigned'} />
-            <MetaBlock label="Workflow run" value={item.activeWorkflowRunId ?? 'Not started'} />
-            <MetaBlock label="Run status" value={item.activeWorkflowRunStatus ?? 'Not started'} />
-            <MetaBlock label="Current step" value={item.activeWorkflowStepKey ? labelizeStatus(item.activeWorkflowStepKey) : 'Not started'} />
-            <MetaBlock label="Step type" value={item.activeWorkflowStepType ?? 'n/a'} />
-            <MetaBlock label="Flowable instance" value={item.processInstanceId ?? 'Not linked yet'} />
+            <MetaBlock
+              label="Assigned to"
+              value={item.assignedTo ?? "Unassigned"}
+            />
+            <MetaBlock
+              label="Workflow run"
+              value={item.activeWorkflowRunId ?? "Not started"}
+            />
+            <MetaBlock
+              label="Run status"
+              value={item.activeWorkflowRunStatus ?? "Not started"}
+            />
+            <MetaBlock
+              label="Current step"
+              value={
+                item.activeWorkflowStepKey
+                  ? labelizeStatus(item.activeWorkflowStepKey)
+                  : "Not started"
+              }
+            />
+            <MetaBlock
+              label="Step type"
+              value={item.activeWorkflowStepType ?? "n/a"}
+            />
+            <MetaBlock
+              label="Flowable instance"
+              value={item.processInstanceId ?? "Not linked yet"}
+            />
             <MetaBlock label="Source folder" value={item.sourceFolder} />
             <MetaBlock label="Source type" value={item.sourceType} />
             <MetaBlock label="Created" value={formatDate(item.createdAt)} />
             <MetaBlock label="Updated" value={formatDate(item.updatedAt)} />
-            <MetaBlock label="Latest event" value={latestEvent ? labelizeStatus(latestEvent.eventType) : 'No events'} />
+            <MetaBlock
+              label="Latest event"
+              value={
+                latestEvent
+                  ? labelizeStatus(latestEvent.eventType)
+                  : "No events"
+              }
+            />
           </div>
 
           <div style={{ marginTop: 20 }}>
             <h3 style={{ marginBottom: 12 }}>Current user tasks</h3>
-            {tasks.filter((task) => task.status === 'open').length === 0 ? (
-              <p className="muted small-text">No open workflow tasks for this item.</p>
+            {tasks.filter((task) => task.status === "open").length === 0 ? (
+              <p className="muted small-text">
+                No open workflow tasks for this item.
+              </p>
             ) : (
               <div className="timeline-list">
                 {tasks
-                  .filter((task) => task.status === 'open')
+                  .filter((task) => task.status === "open")
                   .map((task) => (
                     <article key={task.id} className="timeline-card">
                       <div className="timeline-card-top">
                         <strong>{getTaskTitle(task)}</strong>
                         <span className="badge status-review">open</span>
                       </div>
-                      <p className="work-item-meta">Type: {labelizeStatus(task.taskType)}</p>
-                      <p className="work-item-meta muted">
-                        {task.assignedTo ?? 'Unassigned'} · created {formatDate(task.createdAt)}
+                      <p className="work-item-meta">
+                        Type: {labelizeStatus(task.taskType)}
                       </p>
-                      <form action={`/api/work-items/${item.id}/tasks/${task.id}/complete`} method="post" style={{ marginTop: 12 }}>
+                      <p className="work-item-meta muted">
+                        {task.assignedTo ?? "Unassigned"} · created{" "}
+                        {formatDate(task.createdAt)}
+                      </p>
+                      <form
+                        action={`/api/work-items/${item.id}/tasks/${task.id}/complete`}
+                        method="post"
+                        style={{ marginTop: 12 }}
+                      >
                         <button type="submit" className="button-primary">
                           {getCompletionLabel(task)}
                         </button>
@@ -136,24 +195,38 @@ export default async function WorkItemPage({
           <div className="detail-list">
             <DetailRow label="Source file ID" value={item.sourceFileId} />
             <DetailRow label="Source folder" value={item.sourceFolder} />
-            <DetailRow label="Customer" value={item.customer ?? 'Unknown customer'} />
-            <DetailRow label="Domain" value={item.domain ?? 'Unknown domain'} />
+            <DetailRow
+              label="Customer"
+              value={item.customer ?? "Unknown customer"}
+            />
+            <DetailRow label="Domain" value={item.domain ?? "Unknown domain"} />
           </div>
           <div className="action-row">
             {item.sourceLink ? (
-              <a href={item.sourceLink} target="_blank" rel="noreferrer" className="button-secondary">
+              <a
+                href={item.sourceLink}
+                target="_blank"
+                rel="noreferrer"
+                className="button-secondary"
+              >
                 Open source file
               </a>
             ) : (
               <span className="muted small-text">No source link yet</span>
             )}
-            <form action={`/api/work-items/${item.id}/classify-intake`} method="post">
+            <form
+              action={`/api/work-items/${item.id}/classify-intake`}
+              method="post"
+            >
               <button type="submit" className="button-secondary">
                 Run intake classification
               </button>
             </form>
             {canRenderPdf ? (
-              <form action={`/api/work-items/${item.id}/render-pdf`} method="post">
+              <form
+                action={`/api/work-items/${item.id}/render-pdf`}
+                method="post"
+              >
                 <button type="submit" className="button-primary">
                   Render PDF
                 </button>
@@ -173,14 +246,22 @@ export default async function WorkItemPage({
           ) : (
             <div className="stack-list compact-list">
               {artifacts.map((artifact) => (
-                <Link key={artifact.id} href={`/artifacts/${artifact.id}`} className="work-item-card artifact-card">
+                <Link
+                  key={artifact.id}
+                  href={`/artifacts/${artifact.id}`}
+                  className="work-item-card artifact-card"
+                >
                   <div className="work-item-main">
                     <div className="work-item-title-row">
                       <strong>{labelizeStatus(artifact.artifactType)}</strong>
                       <span className="badge">v{artifact.version}</span>
                     </div>
                     <p className="work-item-meta">{artifact.storageBackend}</p>
-                    <p className="work-item-meta muted">{artifact.storagePath ?? artifact.driveFileId ?? 'No storage path yet'}</p>
+                    <p className="work-item-meta muted">
+                      {artifact.storagePath ??
+                        artifact.driveFileId ??
+                        "No storage path yet"}
+                    </p>
                   </div>
                 </Link>
               ))}
@@ -200,11 +281,17 @@ export default async function WorkItemPage({
                 <article key={event.id} className="timeline-card">
                   <div className="timeline-card-top">
                     <strong>{labelizeStatus(event.eventType)}</strong>
-                    <span className="muted small-text">{formatDate(event.createdAt)}</span>
+                    <span className="muted small-text">
+                      {formatDate(event.createdAt)}
+                    </span>
                   </div>
-                  <p className="work-item-meta">Actor: {event.actor ?? 'system'}</p>
+                  <p className="work-item-meta">
+                    Actor: {event.actor ?? "system"}
+                  </p>
                   {event.payload ? (
-                    <pre className="payload-block">{JSON.stringify(event.payload, null, 2)}</pre>
+                    <pre className="payload-block">
+                      {JSON.stringify(event.payload, null, 2)}
+                    </pre>
                   ) : null}
                 </article>
               ))}
@@ -216,8 +303,13 @@ export default async function WorkItemPage({
       <section className="panel" style={{ marginTop: 20 }}>
         <h2>Still missing</h2>
         <ul className="plain-list">
-          <li>Real Flowable process-instance creation and task completion instead of DB-only mirrored workflow state</li>
-          <li>Manual generation actions for KISS / final design / OpenAPI drafts</li>
+          <li>
+            Real Flowable process-instance creation and task completion instead
+            of DB-only mirrored workflow state
+          </li>
+          <li>
+            Manual generation actions for KISS / final design / OpenAPI drafts
+          </li>
           <li>Comments and review handoff</li>
         </ul>
       </section>
@@ -244,22 +336,23 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 function labelizeStatus(value: string) {
-  return value.replaceAll('_', ' ');
+  return value.replaceAll("_", " ");
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat('en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
+  return new Intl.DateTimeFormat("en-GB", {
+    dateStyle: "medium",
+    timeStyle: "short",
   }).format(new Date(value));
 }
 
 function getTaskTitle(task: WorkflowTask) {
-  if (typeof task.title === 'string' && task.title) {
+  if (typeof task.title === "string" && task.title) {
     return task.title;
   }
 
-  const payloadTitle = typeof task.payload?.title === 'string' ? task.payload.title : null;
+  const payloadTitle =
+    typeof task.payload?.title === "string" ? task.payload.title : null;
   if (payloadTitle) {
     return payloadTitle;
   }
@@ -269,13 +362,13 @@ function getTaskTitle(task: WorkflowTask) {
 
 function getCompletionLabel(task: WorkflowTask) {
   switch (task.taskType) {
-    case 'triage':
-      return 'Complete triage';
-    case 'produce_artifacts':
-      return 'Mark artifacts ready for review';
-    case 'review_and_approve':
-      return 'Approve and move forward';
+    case "triage":
+      return "Complete triage";
+    case "produce_artifacts":
+      return "Mark artifacts ready for review";
+    case "review_and_approve":
+      return "Approve and move forward";
     default:
-      return 'Complete task';
+      return "Complete task";
   }
 }

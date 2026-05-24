@@ -30,7 +30,7 @@ body {
 }
 
 code {
-  font-family: 'SFMono-Regular', Menlo, monospace;
+  font-family: "SFMono-Regular", Menlo, monospace;
 }
 
 a {
@@ -44,7 +44,7 @@ button {
 
 pre {
   margin: 0;
-  font-family: 'SFMono-Regular', Menlo, monospace;
+  font-family: "SFMono-Regular", Menlo, monospace;
 }
 
 .app-topbar {

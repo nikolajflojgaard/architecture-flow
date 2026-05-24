@@ -9,12 +9,19 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "db:migrate": "pnpm --filter @architecture-flow/db migrate",
     "db:seed": "pnpm --filter @architecture-flow/db seed"
   },
   "devDependencies": {
+    "@eslint/js": "^9.27.0",
+    "@next/eslint-plugin-next": "^15.3.2",
+    "eslint": "^9.27.0",
+    "eslint-config-next": "^15.3.2",
+    "globals": "^16.0.0",
     "prettier": "^3.5.3",
     "turbo": "^2.5.3",
+    "typescript-eslint": "^8.32.1",
     "typescript": "^5.8.3"
   }
 }

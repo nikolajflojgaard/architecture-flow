@@ -1,10 +1,10 @@
-import { isServiceTaskTopic, runServiceTaskJob } from './service-task-jobs';
+import { isServiceTaskTopic, runServiceTaskJob } from "./service-task-jobs";
 
 const rawTopic = process.argv[2];
 const workItemId = process.argv[3];
 
 if (!rawTopic || !workItemId) {
-  console.error('Usage: tsx src/run-service-task.ts <topic> <workItemId>');
+  console.error("Usage: tsx src/run-service-task.ts <topic> <workItemId>");
   process.exit(1);
 }
 

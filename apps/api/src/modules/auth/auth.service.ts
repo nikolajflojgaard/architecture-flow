@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import type { AuthMode, AuthUser } from './auth.types';
+import { Injectable } from "@nestjs/common";
+import type { AuthMode, AuthUser } from "./auth.types";
 
 type HeaderValue = string | string[] | undefined;
 
@@ -12,29 +12,34 @@ export class AuthService {
   getMode(): AuthMode {
     const mode = process.env.AUTH_MODE?.trim();
 
-    if (mode === 'header' || mode === 'dev-bypass' || mode === 'disabled') {
+    if (mode === "header" || mode === "dev-bypass" || mode === "disabled") {
       return mode;
     }
 
-    return 'disabled';
+    return "disabled";
   }
 
   resolveUser(request: RequestLike): AuthUser | null {
     const mode = this.getMode();
 
-    if (mode === 'disabled') {
+    if (mode === "disabled") {
       return {
-        email: 'internal-dev@architecture-flow.local',
-        name: 'Internal Dev',
-        roles: ['admin'],
-        source: 'disabled',
+        email: "internal-dev@architecture-flow.local",
+        name: "Internal Dev",
+        roles: ["admin"],
+        source: "disabled",
       };
     }
 
-    if (mode === 'dev-bypass') {
+    if (mode === "dev-bypass") {
       const email = process.env.ARCHITECTURE_FLOW_DEV_USER_EMAIL?.trim();
-      const name = process.env.ARCHITECTURE_FLOW_DEV_USER_NAME?.trim() || email || 'Dev User';
-      const roles = this.parseRoles(process.env.ARCHITECTURE_FLOW_DEV_USER_ROLES);
+      const name =
+        process.env.ARCHITECTURE_FLOW_DEV_USER_NAME?.trim() ||
+        email ||
+        "Dev User";
+      const roles = this.parseRoles(
+        process.env.ARCHITECTURE_FLOW_DEV_USER_ROLES,
+      );
 
       if (!email) {
         return null;
@@ -43,18 +48,22 @@ export class AuthService {
       return {
         email,
         name,
-        roles: roles.length ? roles : ['admin'],
-        source: 'dev-bypass',
+        roles: roles.length ? roles : ["admin"],
+        source: "dev-bypass",
       };
     }
 
-    const email = this.getHeader(request, ['x-authentik-email', 'x-forwarded-email']);
+    const email = this.getHeader(request, [
+      "x-authentik-email",
+      "x-forwarded-email",
+    ]);
     const name =
-      this.getHeader(request, ['x-authentik-name', 'x-forwarded-user']) ||
+      this.getHeader(request, ["x-authentik-name", "x-forwarded-user"]) ||
       email ||
-      'Unknown user';
+      "Unknown user";
     const roles = this.parseRoles(
-      this.getHeader(request, ['x-authentik-groups', 'x-forwarded-groups']) || '',
+      this.getHeader(request, ["x-authentik-groups", "x-forwarded-groups"]) ||
+        "",
     );
 
     if (!email) {
@@ -64,8 +73,8 @@ export class AuthService {
     return {
       email,
       name,
-      roles: roles.length ? roles : ['reviewer'],
-      source: 'header',
+      roles: roles.length ? roles : ["reviewer"],
+      source: "header",
     };
   }
 
@@ -78,7 +87,7 @@ export class AuthService {
         if (first) return first;
       }
 
-      if (typeof value === 'string' && value.trim()) {
+      if (typeof value === "string" && value.trim()) {
         return value.trim();
       }
     }
@@ -87,8 +96,8 @@ export class AuthService {
   }
 
   private parseRoles(value?: string | null) {
-    return (value ?? '')
-      .split(',')
+    return (value ?? "")
+      .split(",")
       .map((role) => role.trim())
       .filter(Boolean);
   }

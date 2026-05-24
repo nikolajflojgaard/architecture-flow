@@ -1,10 +1,12 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { runDriveIntakeSync } from '@architecture-flow/intake-sync';
-import { DatabaseService } from '../../services/database.service';
+import { Inject, Injectable } from "@nestjs/common";
+import { runDriveIntakeSync } from "@architecture-flow/intake-sync";
+import { DatabaseService } from "../../services/database.service";
 
 @Injectable()
 export class IntakeService {
-  constructor(@Inject(DatabaseService) private readonly databaseService: DatabaseService) {}
+  constructor(
+    @Inject(DatabaseService) private readonly databaseService: DatabaseService,
+  ) {}
 
   async listIntakeSources() {
     const result = await this.databaseService.query<{
@@ -67,8 +69,8 @@ export class IntakeService {
             ? `${source.displayName}: skipped (${source.skipped})`
             : `${source.displayName}: scanned ${source.scanned}, discovered ${source.discovered}, enriched ${source.enriched}`,
         )
-        .join('\n'),
-      stderr: '',
+        .join("\n"),
+      stderr: "",
     };
   }
 }

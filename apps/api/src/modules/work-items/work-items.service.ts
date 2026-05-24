@@ -1,12 +1,32 @@
-import crypto from 'node:crypto';
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../services/database.service';
+import crypto from "node:crypto";
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import { DatabaseService } from "../../services/database.service";
 
-export const workflowStatuses = ['new', 'triaged', 'in_progress', 'review', 'done'] as const;
+export const workflowStatuses = [
+  "new",
+  "triaged",
+  "in_progress",
+  "review",
+  "done",
+] as const;
 export type WorkflowStatus = (typeof workflowStatuses)[number];
-export const taskStatuses = ['open', 'completed', 'cancelled', 'failed'] as const;
+export const taskStatuses = [
+  "open",
+  "completed",
+  "cancelled",
+  "failed",
+] as const;
 export type TaskStatus = (typeof taskStatuses)[number];
-export const userTaskTypes = ['triage', 'produce_artifacts', 'review_and_approve'] as const;
+export const userTaskTypes = [
+  "triage",
+  "produce_artifacts",
+  "review_and_approve",
+] as const;
 export type UserTaskType = (typeof userTaskTypes)[number];
 
 type WorkflowTaskDefinition = {
@@ -16,8 +36,8 @@ type WorkflowTaskDefinition = {
   stepKey: string;
 };
 
-type WorkflowRunStatus = 'running' | 'completed';
-type WorkflowStepType = 'user' | 'gateway' | 'end';
+type WorkflowRunStatus = "running" | "completed";
+type WorkflowStepType = "user" | "gateway" | "end";
 
 type WorkflowRunRow = {
   id: string;
@@ -26,32 +46,35 @@ type WorkflowRunRow = {
   currentStepType: WorkflowStepType | null;
 };
 
-const workflowProcessDefinitionKey = 'architecture-flow-v1';
+const workflowProcessDefinitionKey = "architecture-flow-v1";
 
-const workflowTaskByStatus: Record<Exclude<WorkflowStatus, 'done'>, WorkflowTaskDefinition> = {
+const workflowTaskByStatus: Record<
+  Exclude<WorkflowStatus, "done">,
+  WorkflowTaskDefinition
+> = {
   new: {
-    taskType: 'triage',
-    title: 'Triage work item',
-    nextStatus: 'triaged',
-    stepKey: 'UserTask_Triage',
+    taskType: "triage",
+    title: "Triage work item",
+    nextStatus: "triaged",
+    stepKey: "UserTask_Triage",
   },
   triaged: {
-    taskType: 'produce_artifacts',
-    title: 'Produce working artifacts',
-    nextStatus: 'in_progress',
-    stepKey: 'UserTask_WorkInProgress',
+    taskType: "produce_artifacts",
+    title: "Produce working artifacts",
+    nextStatus: "in_progress",
+    stepKey: "UserTask_WorkInProgress",
   },
   in_progress: {
-    taskType: 'review_and_approve',
-    title: 'Review and approve',
-    nextStatus: 'review',
-    stepKey: 'UserTask_Review',
+    taskType: "review_and_approve",
+    title: "Review and approve",
+    nextStatus: "review",
+    stepKey: "UserTask_Review",
   },
   review: {
-    taskType: 'review_and_approve',
-    title: 'Approve review outcome',
-    nextStatus: 'done',
-    stepKey: 'Gateway_ReviewApproved',
+    taskType: "review_and_approve",
+    title: "Approve review outcome",
+    nextStatus: "done",
+    stepKey: "Gateway_ReviewApproved",
   },
 };
 
@@ -68,7 +91,9 @@ type WorkItemRow = {
 
 @Injectable()
 export class WorkItemsService {
-  constructor(@Inject(DatabaseService) private readonly databaseService: DatabaseService) {}
+  constructor(
+    @Inject(DatabaseService) private readonly databaseService: DatabaseService,
+  ) {}
 
   async listWorkItems(options: ListWorkItemsOptions) {
     const limit = Math.min(Math.max(options.limit, 1), 100);
@@ -117,7 +142,7 @@ export class WorkItemsService {
         order by workflow_runs.started_at desc
         limit 1
       ) workflow_run on true
-      ${where.length ? `where ${where.join(' and ')}` : ''}
+      ${where.length ? `where ${where.join(" and ")}` : ""}
       order by work_items.created_at desc
       limit ${limitPlaceholder}
     `;
@@ -130,7 +155,7 @@ export class WorkItemsService {
   }
 
   async getWorkItem(id: string) {
-    await this.ensureWorkflowState(id, 'system');
+    await this.ensureWorkflowState(id, "system");
 
     const result = await this.databaseService.query(
       `
@@ -179,7 +204,7 @@ export class WorkItemsService {
   }
 
   async listTasks(workItemId: string) {
-    await this.ensureWorkflowState(workItemId, 'system');
+    await this.ensureWorkflowState(workItemId, "system");
 
     const result = await this.databaseService.query(
       `
@@ -234,7 +259,9 @@ export class WorkItemsService {
 
   async updateWorkflowStatus(id: string, nextStatus: string, actor: string) {
     if (!workflowStatuses.includes(nextStatus as WorkflowStatus)) {
-      throw new BadRequestException(`Unsupported workflow status: ${nextStatus}`);
+      throw new BadRequestException(
+        `Unsupported workflow status: ${nextStatus}`,
+      );
     }
 
     const current = await this.requireWorkItemRow(id);
@@ -245,7 +272,7 @@ export class WorkItemsService {
       };
     }
 
-    await this.databaseService.query('begin');
+    await this.databaseService.query("begin");
 
     try {
       await this.databaseService.query(
@@ -258,19 +285,27 @@ export class WorkItemsService {
         [id, nextStatus],
       );
 
-      await this.insertAuditEvent(id, 'workflow_status_changed', actor, {
+      await this.insertAuditEvent(id, "workflow_status_changed", actor, {
         from: current.status,
         to: nextStatus,
         title: current.title,
-        source: 'manual-status-update',
+        source: "manual-status-update",
       });
 
-      const run = await this.ensureWorkflowRunForStatus(id, nextStatus as WorkflowStatus);
-      await this.syncTasksForStatus(id, run.id, nextStatus as WorkflowStatus, actor);
+      const run = await this.ensureWorkflowRunForStatus(
+        id,
+        nextStatus as WorkflowStatus,
+      );
+      await this.syncTasksForStatus(
+        id,
+        run.id,
+        nextStatus as WorkflowStatus,
+        actor,
+      );
 
-      await this.databaseService.query('commit');
+      await this.databaseService.query("commit");
     } catch (error) {
-      await this.databaseService.query('rollback');
+      await this.databaseService.query("rollback");
       throw error;
     }
 
@@ -304,24 +339,29 @@ export class WorkItemsService {
 
     const task = taskResult.rows[0];
     if (!task) {
-      throw new NotFoundException('Task not found');
+      throw new NotFoundException("Task not found");
     }
 
-    if (task.status !== 'open') {
-      throw new BadRequestException('Only open tasks can be completed');
+    if (task.status !== "open") {
+      throw new BadRequestException("Only open tasks can be completed");
     }
 
     const workItem = await this.requireWorkItemRow(workItemId);
     const definition = this.getTaskDefinitionForStatus(workItem.status);
 
     if (!definition || definition.taskType !== task.taskType) {
-      throw new BadRequestException('Task does not match the current workflow state');
+      throw new BadRequestException(
+        "Task does not match the current workflow state",
+      );
     }
 
-    await this.databaseService.query('begin');
+    await this.databaseService.query("begin");
 
     try {
-      const run = await this.ensureWorkflowRunForStatus(workItemId, workItem.status);
+      const run = await this.ensureWorkflowRunForStatus(
+        workItemId,
+        workItem.status,
+      );
 
       await this.databaseService.query(
         `
@@ -338,7 +378,7 @@ export class WorkItemsService {
         [taskId, run.id, definition.title, actor],
       );
 
-      await this.insertAuditEvent(workItemId, 'task.completed', actor, {
+      await this.insertAuditEvent(workItemId, "task.completed", actor, {
         taskId,
         taskType: task.taskType,
         fromStatus: workItem.status,
@@ -356,19 +396,29 @@ export class WorkItemsService {
         [workItemId, definition.nextStatus],
       );
 
-      await this.insertAuditEvent(workItemId, 'workflow_status_changed', actor, {
-        from: workItem.status,
-        to: definition.nextStatus,
-        taskId,
-        taskType: task.taskType,
-        workflowRunId: run.id,
-      });
+      await this.insertAuditEvent(
+        workItemId,
+        "workflow_status_changed",
+        actor,
+        {
+          from: workItem.status,
+          to: definition.nextStatus,
+          taskId,
+          taskType: task.taskType,
+          workflowRunId: run.id,
+        },
+      );
 
-      await this.syncTasksForStatus(workItemId, run.id, definition.nextStatus, actor);
+      await this.syncTasksForStatus(
+        workItemId,
+        run.id,
+        definition.nextStatus,
+        actor,
+      );
 
-      await this.databaseService.query('commit');
+      await this.databaseService.query("commit");
     } catch (error) {
-      await this.databaseService.query('rollback');
+      await this.databaseService.query("rollback");
       throw error;
     }
 
@@ -380,12 +430,18 @@ export class WorkItemsService {
 
   private async ensureWorkflowState(workItemId: string, actor: string) {
     const workItem = await this.requireWorkItemRow(workItemId);
-    const run = await this.ensureWorkflowRunForStatus(workItemId, workItem.status);
+    const run = await this.ensureWorkflowRunForStatus(
+      workItemId,
+      workItem.status,
+    );
     await this.syncTasksForStatus(workItemId, run.id, workItem.status, actor);
     return { workItem, run };
   }
 
-  private async ensureWorkflowRunForStatus(workItemId: string, status: WorkflowStatus) {
+  private async ensureWorkflowRunForStatus(
+    workItemId: string,
+    status: WorkflowStatus,
+  ) {
     const existing = await this.databaseService.query<WorkflowRunRow>(
       `
         select
@@ -402,7 +458,11 @@ export class WorkItemsService {
     );
 
     const target = this.getWorkflowRunTarget(status);
-    const payload = JSON.stringify({ workflowStatus: status, stepKey: target.stepKey, stepType: target.stepType });
+    const payload = JSON.stringify({
+      workflowStatus: status,
+      stepKey: target.stepKey,
+      stepType: target.stepType,
+    });
 
     if (!existing.rowCount) {
       const id = crypto.randomUUID();
@@ -442,7 +502,7 @@ export class WorkItemsService {
           target.stepKey,
           target.stepType,
           payload,
-          target.runStatus === 'completed' ? new Date().toISOString() : null,
+          target.runStatus === "completed" ? new Date().toISOString() : null,
         ],
       );
 
@@ -477,15 +537,28 @@ export class WorkItemsService {
     };
   }
 
-  private async syncTasksForStatus(workItemId: string, workflowRunId: string, status: WorkflowStatus, actor: string) {
+  private async syncTasksForStatus(
+    workItemId: string,
+    workflowRunId: string,
+    status: WorkflowStatus,
+    actor: string,
+  ) {
     const definition = this.getTaskDefinitionForStatus(status);
 
     if (!definition) {
-      await this.cancelOpenTasks(workItemId, null, workflowRunId, actor, 'workflow-finished');
+      await this.cancelOpenTasks(
+        workItemId,
+        null,
+        workflowRunId,
+        actor,
+        "workflow-finished",
+      );
       return;
     }
 
-    const existingCurrentTask = await this.databaseService.query<{ id: string }>(
+    const existingCurrentTask = await this.databaseService.query<{
+      id: string;
+    }>(
       `
         select id
         from tasks
@@ -509,7 +582,12 @@ export class WorkItemsService {
                 || jsonb_build_object('expectedNextStatus', $3, 'stepKey', $4)
           where id = $1
         `,
-        [existingCurrentTask.rows[0].id, definition.title, definition.nextStatus, definition.stepKey],
+        [
+          existingCurrentTask.rows[0].id,
+          definition.title,
+          definition.nextStatus,
+          definition.stepKey,
+        ],
       );
     } else {
       const adoptableTask = await this.databaseService.query<{ id: string }>(
@@ -536,7 +614,13 @@ export class WorkItemsService {
                   || jsonb_build_object('expectedNextStatus', $4, 'stepKey', $5)
             where id = $1
           `,
-          [adoptableTask.rows[0].id, workflowRunId, definition.title, definition.nextStatus, definition.stepKey],
+          [
+            adoptableTask.rows[0].id,
+            workflowRunId,
+            definition.title,
+            definition.nextStatus,
+            definition.stepKey,
+          ],
         );
       } else {
         await this.databaseService.query(
@@ -561,13 +645,23 @@ export class WorkItemsService {
             definition.taskType,
             definition.title,
             null,
-            JSON.stringify({ expectedNextStatus: definition.nextStatus, title: definition.title, stepKey: definition.stepKey }),
+            JSON.stringify({
+              expectedNextStatus: definition.nextStatus,
+              title: definition.title,
+              stepKey: definition.stepKey,
+            }),
           ],
         );
       }
     }
 
-    await this.cancelOpenTasks(workItemId, definition.taskType, workflowRunId, actor, 'workflow-state-sync');
+    await this.cancelOpenTasks(
+      workItemId,
+      definition.taskType,
+      workflowRunId,
+      actor,
+      "workflow-state-sync",
+    );
   }
 
   private async cancelOpenTasks(
@@ -578,7 +672,11 @@ export class WorkItemsService {
     reason: string,
   ) {
     const params: unknown[] = [workItemId, workflowRunId];
-    const conditions = [`work_item_id = $1`, `status = 'open'`, `workflow_run_id = $2`];
+    const conditions = [
+      `work_item_id = $1`,
+      `status = 'open'`,
+      `workflow_run_id = $2`,
+    ];
 
     if (keepTaskType) {
       params.push(keepTaskType);
@@ -587,7 +685,10 @@ export class WorkItemsService {
 
     params.push(actor, reason);
 
-    const result = await this.databaseService.query<{ id: string; taskType: string }>(
+    const result = await this.databaseService.query<{
+      id: string;
+      taskType: string;
+    }>(
       `
         update tasks
         set status = 'cancelled',
@@ -595,7 +696,7 @@ export class WorkItemsService {
             updated_at = now(),
             payload_json = coalesce(payload_json, '{}'::jsonb)
               || jsonb_build_object('cancelledBy', $${params.length - 1}, 'cancelledAt', now(), 'cancelReason', $${params.length})
-        where ${conditions.join(' and ')}
+        where ${conditions.join(" and ")}
         returning id, task_type as "taskType"
       `,
       params,
@@ -605,7 +706,7 @@ export class WorkItemsService {
       return;
     }
 
-    await this.insertAuditEvent(workItemId, 'task.cancelled', actor, {
+    await this.insertAuditEvent(workItemId, "task.cancelled", actor, {
       reason,
       taskIds: result.rows.map((row) => row.id),
       taskTypes: result.rows.map((row) => row.taskType),
@@ -614,7 +715,7 @@ export class WorkItemsService {
   }
 
   private getTaskDefinitionForStatus(status: WorkflowStatus) {
-    if (status === 'done') {
+    if (status === "done") {
       return null;
     }
 
@@ -626,19 +727,19 @@ export class WorkItemsService {
     stepKey: string;
     stepType: WorkflowStepType;
   } {
-    if (status === 'done') {
+    if (status === "done") {
       return {
-        runStatus: 'completed',
-        stepKey: 'EndEvent_Done',
-        stepType: 'end',
+        runStatus: "completed",
+        stepKey: "EndEvent_Done",
+        stepType: "end",
       };
     }
 
     const definition = workflowTaskByStatus[status];
     return {
-      runStatus: 'running',
+      runStatus: "running",
       stepKey: definition.stepKey,
-      stepType: definition.stepKey.startsWith('Gateway_') ? 'gateway' : 'user',
+      stepType: definition.stepKey.startsWith("Gateway_") ? "gateway" : "user",
     };
   }
 
@@ -655,19 +756,30 @@ export class WorkItemsService {
 
     const item = result.rows[0];
     if (!item) {
-      throw new NotFoundException('Work item not found');
+      throw new NotFoundException("Work item not found");
     }
 
     return item;
   }
 
-  private async insertAuditEvent(workItemId: string, eventType: string, actor: string, payload: Record<string, unknown>) {
+  private async insertAuditEvent(
+    workItemId: string,
+    eventType: string,
+    actor: string,
+    payload: Record<string, unknown>,
+  ) {
     await this.databaseService.query(
       `
         insert into audit_events (id, work_item_id, event_type, actor, payload_json)
         values ($1, $2, $3, $4, $5::jsonb)
       `,
-      [crypto.randomUUID(), workItemId, eventType, actor, JSON.stringify(payload)],
+      [
+        crypto.randomUUID(),
+        workItemId,
+        eventType,
+        actor,
+        JSON.stringify(payload),
+      ],
     );
   }
 }

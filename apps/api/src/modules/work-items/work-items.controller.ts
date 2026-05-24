@@ -1,22 +1,38 @@
-import { Body, Controller, Get, Inject, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ArtifactsService } from '../artifacts/artifacts.service';
-import { CurrentUser } from '../auth/auth-user.decorator';
-import { AuthGuard } from '../auth/auth.guard';
-import type { AuthUser } from '../auth/auth.types';
-import { WorkerJobsService } from '../../services/worker-jobs.service';
-import { WorkItemsService } from './work-items.service';
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
+import { ArtifactsService } from "../artifacts/artifacts.service";
+import { CurrentUser } from "../auth/auth-user.decorator";
+import { AuthGuard } from "../auth/auth.guard";
+import type { AuthUser } from "../auth/auth.types";
+import { WorkerJobsService } from "../../services/worker-jobs.service";
+import { WorkItemsService } from "./work-items.service";
 
-@Controller('/v1/work-items')
+@Controller("/v1/work-items")
 @UseGuards(AuthGuard)
 export class WorkItemsController {
   constructor(
-    @Inject(WorkItemsService) private readonly workItemsService: WorkItemsService,
-    @Inject(ArtifactsService) private readonly artifactsService: ArtifactsService,
-    @Inject(WorkerJobsService) private readonly workerJobsService: WorkerJobsService,
+    @Inject(WorkItemsService)
+    private readonly workItemsService: WorkItemsService,
+    @Inject(ArtifactsService)
+    private readonly artifactsService: ArtifactsService,
+    @Inject(WorkerJobsService)
+    private readonly workerJobsService: WorkerJobsService,
   ) {}
 
   @Get()
-  async listWorkItems(@Query('status') status?: string, @Query('limit') limit?: string) {
+  async listWorkItems(
+    @Query("status") status?: string,
+    @Query("limit") limit?: string,
+  ) {
     const parsedLimit = limit ? Number(limit) : 20;
     return this.workItemsService.listWorkItems({
       status,
@@ -24,48 +40,48 @@ export class WorkItemsController {
     });
   }
 
-  @Get(':id')
-  async getWorkItem(@Param('id') id: string) {
+  @Get(":id")
+  async getWorkItem(@Param("id") id: string) {
     return this.workItemsService.getWorkItem(id);
   }
 
-  @Get(':id/audit-events')
-  async listAuditEvents(@Param('id') id: string) {
+  @Get(":id/audit-events")
+  async listAuditEvents(@Param("id") id: string) {
     return this.workItemsService.listAuditEvents(id);
   }
 
-  @Get(':id/artifacts')
-  async listArtifacts(@Param('id') id: string) {
+  @Get(":id/artifacts")
+  async listArtifacts(@Param("id") id: string) {
     return this.artifactsService.listArtifactsForWorkItem(id);
   }
 
-  @Get(':id/tasks')
-  async listTasks(@Param('id') id: string) {
+  @Get(":id/tasks")
+  async listTasks(@Param("id") id: string) {
     return this.workItemsService.listTasks(id);
   }
 
-  @Patch(':id/status')
+  @Patch(":id/status")
   async updateWorkflowStatus(
-    @Param('id') id: string,
-    @Body('status') status: string,
+    @Param("id") id: string,
+    @Body("status") status: string,
     @CurrentUser() user: AuthUser | null,
   ) {
-    const actor = user?.email ?? user?.name ?? 'system';
+    const actor = user?.email ?? user?.name ?? "system";
     return this.workItemsService.updateWorkflowStatus(id, status, actor);
   }
 
-  @Post(':id/tasks/:taskId/complete')
+  @Post(":id/tasks/:taskId/complete")
   async completeTask(
-    @Param('id') id: string,
-    @Param('taskId') taskId: string,
+    @Param("id") id: string,
+    @Param("taskId") taskId: string,
     @CurrentUser() user: AuthUser | null,
   ) {
-    const actor = user?.email ?? user?.name ?? 'system';
+    const actor = user?.email ?? user?.name ?? "system";
     return this.workItemsService.completeTask(id, taskId, actor);
   }
 
-  @Post(':id/classify-intake')
-  async classifyIntake(@Param('id') id: string) {
-    return this.workerJobsService.runServiceTask('intake.classify', id);
+  @Post(":id/classify-intake")
+  async classifyIntake(@Param("id") id: string) {
+    return this.workerJobsService.runServiceTask("intake.classify", id);
   }
 }

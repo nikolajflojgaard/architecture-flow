@@ -89,6 +89,7 @@ Do **not** start with:
 - **shadcn/ui**
 
 Reason:
+
 - fast internal-tool development
 - strong component ecosystem
 - easy authenticated dashboard patterns
@@ -98,6 +99,7 @@ Reason:
 - **NestJS**
 
 Reason:
+
 - clear modular structure
 - good fit for long-lived backend code
 - predictable service/controller patterns
@@ -107,6 +109,7 @@ Reason:
 - **PostgreSQL**
 
 Reason:
+
 - durable relational core
 - easy audit/event modeling
 - boring in the good way
@@ -116,11 +119,13 @@ Reason:
 - **Flowable OSS**
 
 Reason:
+
 - BPMN-native
 - open source
 - good fit for human tasks + service tasks + timers
 
 Alternative:
+
 - Camunda 7 community
 
 ### BPMN modeling
@@ -128,6 +133,7 @@ Alternative:
 - **bpmn-js**
 
 Reason:
+
 - industry-standard browser BPMN modeler/viewer
 - can support both diagram display and admin editing later
 
@@ -136,10 +142,12 @@ Reason:
 - **Authentik**
 
 Reason:
+
 - lighter and cleaner than overcommitting to Keycloak too early
 - good fit for internal SSO-style usage
 
 Alternative:
+
 - Keycloak if heavier enterprise requirements appear
 
 ### Background jobs
@@ -147,6 +155,7 @@ Alternative:
 - **Redis + BullMQ**
 
 Reason:
+
 - simple async execution
 - retries
 - queue visibility
@@ -156,6 +165,7 @@ Reason:
 - **MinIO**
 
 Reason:
+
 - open source S3-compatible object storage
 - keeps artifacts in a controlled durable store
 
@@ -169,6 +179,7 @@ Reason:
 - **OpenClaw** as the orchestration/agent layer
 
 Reason:
+
 - keeps generation behavior out of the app core
 - easier to evolve prompts/workflows without rebuilding the whole product
 

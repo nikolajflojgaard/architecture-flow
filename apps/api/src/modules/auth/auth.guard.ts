@@ -1,6 +1,11 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import type { AuthUser } from './auth.types';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from "@nestjs/common";
+import { AuthService } from "./auth.service";
+import type { AuthUser } from "./auth.types";
 
 type RequestWithUser = {
   headers: Record<string, string | string[] | undefined>;
@@ -16,7 +21,7 @@ export class AuthGuard implements CanActivate {
     const user = this.authService.resolveUser(request);
 
     if (!user) {
-      throw new UnauthorizedException('Authentication required');
+      throw new UnauthorizedException("Authentication required");
     }
 
     request.authUser = user;

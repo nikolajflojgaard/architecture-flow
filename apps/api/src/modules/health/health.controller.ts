@@ -1,18 +1,18 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get } from "@nestjs/common";
 
 @Controller()
 export class HealthController {
-  @Get('/health')
+  @Get("/health")
   getHealth() {
-    return { ok: true, service: 'api' };
+    return { ok: true, service: "api" };
   }
 
-  @Get('/v1/meta')
+  @Get("/v1/meta")
   getMeta() {
     return {
-      name: 'Architecture Flow API',
-      status: 'bootstrap',
-      modules: ['work-items', 'artifacts', 'workflow', 'audit'],
+      name: "Architecture Flow API",
+      status: "bootstrap",
+      modules: ["work-items", "artifacts", "workflow", "audit"],
     };
   }
 }

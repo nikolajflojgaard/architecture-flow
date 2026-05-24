@@ -1,13 +1,17 @@
-import type { ReactNode } from 'react';
-import { getViewer } from '../lib/auth';
-import './globals.css';
+import type { ReactNode } from "react";
+import { getViewer } from "../lib/auth";
+import "./globals.css";
 
 export const metadata = {
-  title: 'Architecture Flow',
-  description: 'Architecture workflow manager',
+  title: "Architecture Flow",
+  description: "Architecture workflow manager",
 };
 
-export default async function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const viewer = await getViewer();
 
   return (
@@ -23,7 +27,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               <div className="topbar-user">
                 <span>{viewer.user.name}</span>
                 <span className="topbar-hint">{viewer.user.email}</span>
-                <span className="topbar-pill">{viewer.user.roles.join(', ')}</span>
+                <span className="topbar-pill">
+                  {viewer.user.roles.join(", ")}
+                </span>
               </div>
             </header>
             {children}
@@ -34,10 +40,12 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               <p className="eyebrow">Authentication required</p>
               <h1>Architecture Flow is now behind an auth shell</h1>
               <p>
-                No trusted identity headers were present, and no dev-bypass user is configured.
+                No trusted identity headers were present, and no dev-bypass user
+                is configured.
               </p>
               <p className="muted">
-                Set <code>AUTH_MODE=dev-bypass</code> with a dev user locally, or put the app behind Authentik header forwarding.
+                Set <code>AUTH_MODE=dev-bypass</code> with a dev user locally,
+                or put the app behind Authentik header forwarding.
               </p>
             </section>
           </main>

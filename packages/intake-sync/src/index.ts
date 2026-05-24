@@ -1,8 +1,11 @@
-import { execFile } from 'node:child_process';
-import crypto from 'node:crypto';
-import { promisify } from 'node:util';
-import { Pool } from 'pg';
-import { inferIntakeMetadata, type IntakeMetadataInference } from '@architecture-flow/shared';
+import { execFile } from "node:child_process";
+import crypto from "node:crypto";
+import { promisify } from "node:util";
+import { Pool } from "pg";
+import {
+  inferIntakeMetadata,
+  type IntakeMetadataInference,
+} from "@architecture-flow/shared";
 
 const execFileAsync = promisify(execFile);
 
@@ -42,16 +45,20 @@ export type IntakeSyncSummary = {
   };
 };
 
-export async function runDriveIntakeSync(options?: { databaseUrl?: string; driveAccount?: string }): Promise<IntakeSyncSummary> {
+export async function runDriveIntakeSync(options?: {
+  databaseUrl?: string;
+  driveAccount?: string;
+}): Promise<IntakeSyncSummary> {
   const databaseUrl = options?.databaseUrl ?? process.env.DATABASE_URL;
-  const driveAccount = options?.driveAccount ?? process.env.GOOGLE_DRIVE_ACCOUNT;
+  const driveAccount =
+    options?.driveAccount ?? process.env.GOOGLE_DRIVE_ACCOUNT;
 
   if (!databaseUrl) {
-    throw new Error('DATABASE_URL is required');
+    throw new Error("DATABASE_URL is required");
   }
 
   if (!driveAccount) {
-    throw new Error('GOOGLE_DRIVE_ACCOUNT is required');
+    throw new Error("GOOGLE_DRIVE_ACCOUNT is required");
   }
 
   const pool = new Pool({ connectionString: databaseUrl });
@@ -69,13 +76,16 @@ export async function runDriveIntakeSync(options?: { databaseUrl?: string; drive
           scanned: 0,
           discovered: 0,
           enriched: 0,
-          skipped: 'could not resolve folder',
+          skipped: "could not resolve folder",
         });
         continue;
       }
 
       if (source.driveFolderId !== folderId) {
-        await pool.query('update intake_sources set drive_folder_id = $1, updated_at = now() where id = $2', [folderId, source.id]);
+        await pool.query(
+          "update intake_sources set drive_folder_id = $1, updated_at = now() where id = $2",
+          [folderId, source.id],
+        );
       }
 
       const files = await listFolderFiles(folderId, driveAccount);
@@ -86,11 +96,29 @@ export async function runDriveIntakeSync(options?: { databaseUrl?: string; drive
         const result = await upsertWorkItem(pool, source, file);
         if (result.discovered) {
           discovered += 1;
-          await insertIntakeEvent(pool, source.id, result.workItemId, file, result.inferred);
-          await insertAuditEvent(pool, result.workItemId, source, file, result.inferred);
+          await insertIntakeEvent(
+            pool,
+            source.id,
+            result.workItemId,
+            file,
+            result.inferred,
+          );
+          await insertAuditEvent(
+            pool,
+            result.workItemId,
+            source,
+            file,
+            result.inferred,
+          );
         } else if (result.metadataChanged) {
           enriched += 1;
-          await insertMetadataRefreshAuditEvent(pool, result.workItemId, source, file, result.inferred);
+          await insertMetadataRefreshAuditEvent(
+            pool,
+            result.workItemId,
+            source,
+            file,
+            result.inferred,
+          );
         }
       }
 
@@ -139,7 +167,10 @@ async function loadIntakeSources(pool: Pool): Promise<IntakeSource[]> {
   return result.rows;
 }
 
-async function resolveFolderId(source: IntakeSource, driveAccount: string): Promise<string | null> {
+async function resolveFolderId(
+  source: IntakeSource,
+  driveAccount: string,
+): Promise<string | null> {
   if (source.driveFolderId) {
     return source.driveFolderId;
   }
@@ -148,18 +179,26 @@ async function resolveFolderId(source: IntakeSource, driveAccount: string): Prom
     return null;
   }
 
-  const rootMatches = await driveSearch(source.driveRootName, "mimeType='application/vnd.google-apps.folder'", driveAccount);
+  const rootMatches = await driveSearch(
+    source.driveRootName,
+    "mimeType='application/vnd.google-apps.folder'",
+    driveAccount,
+  );
   const root = rootMatches.find((entry) => entry.name === source.driveRootName);
   if (!root) {
     return null;
   }
 
-  const segments = source.driveFolderPath.split('/').filter(Boolean);
+  const segments = source.driveFolderPath.split("/").filter(Boolean);
   let currentParentId = root.id;
 
   for (const segment of segments) {
     const children = await driveLs(currentParentId, driveAccount);
-    const next = children.find((entry) => entry.mimeType === 'application/vnd.google-apps.folder' && entry.name === segment);
+    const next = children.find(
+      (entry) =>
+        entry.mimeType === "application/vnd.google-apps.folder" &&
+        entry.name === segment,
+    );
     if (!next) {
       return null;
     }
@@ -169,16 +208,26 @@ async function resolveFolderId(source: IntakeSource, driveAccount: string): Prom
   return currentParentId;
 }
 
-async function listFolderFiles(folderId: string, driveAccount: string): Promise<DriveEntry[]> {
+async function listFolderFiles(
+  folderId: string,
+  driveAccount: string,
+): Promise<DriveEntry[]> {
   const entries = await driveLs(folderId, driveAccount);
-  return entries.filter((entry) => entry.mimeType !== 'application/vnd.google-apps.folder');
+  return entries.filter(
+    (entry) => entry.mimeType !== "application/vnd.google-apps.folder",
+  );
 }
 
 async function upsertWorkItem(
   pool: Pool,
   source: IntakeSource,
   file: DriveEntry,
-): Promise<{ workItemId: string; discovered: boolean; metadataChanged: boolean; inferred: IntakeMetadataInference }> {
+): Promise<{
+  workItemId: string;
+  discovered: boolean;
+  metadataChanged: boolean;
+  inferred: IntakeMetadataInference;
+}> {
   const existing = await pool.query<{
     id: string;
     customer: string | null;
@@ -223,7 +272,7 @@ async function upsertWorkItem(
       current.customer !== inferred.customer ||
       current.domain !== inferred.domain ||
       current.priority !== inferred.priority ||
-      current.sourceType !== (inferred.sourceType ?? 'drive-file');
+      current.sourceType !== (inferred.sourceType ?? "drive-file");
 
     await pool.query(
       `
@@ -247,11 +296,16 @@ async function upsertWorkItem(
         inferred.customer,
         inferred.domain,
         inferred.priority,
-        inferred.sourceType ?? 'drive-file',
+        inferred.sourceType ?? "drive-file",
       ],
     );
 
-    return { workItemId: current.id, discovered: false, metadataChanged, inferred };
+    return {
+      workItemId: current.id,
+      discovered: false,
+      metadataChanged,
+      inferred,
+    };
   }
 
   const workItemId = crypto.randomUUID();
@@ -265,13 +319,13 @@ async function upsertWorkItem(
     [
       workItemId,
       file.name,
-      inferred.sourceType ?? 'drive-file',
+      inferred.sourceType ?? "drive-file",
       source.displayName,
       file.id,
       file.webViewLink ?? null,
       inferred.customer,
       inferred.domain,
-      'new',
+      "new",
       inferred.priority,
     ],
   );
@@ -297,7 +351,7 @@ async function insertIntakeEvent(
       intakeSourceId,
       workItemId,
       file.id,
-      'discovered',
+      "discovered",
       JSON.stringify({
         name: file.name,
         mimeType: file.mimeType,
@@ -324,8 +378,8 @@ async function insertAuditEvent(
     [
       crypto.randomUUID(),
       workItemId,
-      'intake.discovered',
-      'drive-sync',
+      "intake.discovered",
+      "drive-sync",
       JSON.stringify({
         sourceKey: source.sourceKey,
         displayName: source.displayName,
@@ -352,8 +406,8 @@ async function insertMetadataRefreshAuditEvent(
     [
       crypto.randomUUID(),
       workItemId,
-      'intake.metadata_refreshed',
-      'drive-sync',
+      "intake.metadata_refreshed",
+      "drive-sync",
       JSON.stringify({
         sourceKey: source.sourceKey,
         displayName: source.displayName,
@@ -365,35 +419,42 @@ async function insertMetadataRefreshAuditEvent(
   );
 }
 
-async function driveSearch(queryText: string, filter: string, driveAccount: string): Promise<DriveEntry[]> {
+async function driveSearch(
+  queryText: string,
+  filter: string,
+  driveAccount: string,
+): Promise<DriveEntry[]> {
   const query = `${queryText} ${filter}`;
-  const { stdout } = await execFileAsync('gog', [
-    'drive',
-    'search',
+  const { stdout } = await execFileAsync("gog", [
+    "drive",
+    "search",
     query,
-    '--account',
+    "--account",
     driveAccount,
-    '--json',
-    '--results-only',
-    '--no-input',
+    "--json",
+    "--results-only",
+    "--no-input",
   ]);
 
   return JSON.parse(stdout) as DriveEntry[];
 }
 
-async function driveLs(parentId: string, driveAccount: string): Promise<DriveEntry[]> {
-  const { stdout } = await execFileAsync('gog', [
-    'drive',
-    'ls',
-    '--parent',
+async function driveLs(
+  parentId: string,
+  driveAccount: string,
+): Promise<DriveEntry[]> {
+  const { stdout } = await execFileAsync("gog", [
+    "drive",
+    "ls",
+    "--parent",
     parentId,
-    '--max',
-    '200',
-    '--account',
+    "--max",
+    "200",
+    "--account",
     driveAccount,
-    '--json',
-    '--results-only',
-    '--no-input',
+    "--json",
+    "--results-only",
+    "--no-input",
   ]);
 
   return JSON.parse(stdout) as DriveEntry[];

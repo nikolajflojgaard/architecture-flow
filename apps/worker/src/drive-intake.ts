@@ -1,4 +1,4 @@
-import { runDriveIntakeSync } from '@architecture-flow/intake-sync';
+import { runDriveIntakeSync } from "@architecture-flow/intake-sync";
 
 void main();
 

@@ -1,12 +1,12 @@
-import pg from 'pg';
-import crypto from 'node:crypto';
+import pg from "pg";
+import crypto from "node:crypto";
 
 const { Pool } = pg;
 
 const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
-  console.error('DATABASE_URL is required');
+  console.error("DATABASE_URL is required");
   process.exit(1);
 }
 
@@ -14,53 +14,54 @@ const pool = new Pool({ connectionString: databaseUrl });
 
 const items = [
   {
-    key: 'seed-general-design-1',
-    title: 'BPI - FAS MyView integration',
-    sourceType: 'drive-file',
-    sourceFolder: 'General designs',
-    sourceFileId: 'seed-general-design-1',
-    sourceLink: 'https://drive.google.com/file/d/seed-general-design-1/view',
-    customer: 'TDC NET',
-    domain: 'Customer platform',
-    workflowStatus: 'new',
-    priority: 'normal',
+    key: "seed-general-design-1",
+    title: "BPI - FAS MyView integration",
+    sourceType: "drive-file",
+    sourceFolder: "General designs",
+    sourceFileId: "seed-general-design-1",
+    sourceLink: "https://drive.google.com/file/d/seed-general-design-1/view",
+    customer: "TDC NET",
+    domain: "Customer platform",
+    workflowStatus: "new",
+    priority: "normal",
   },
   {
-    key: 'seed-yaml-1',
-    title: 'customer-address-api.yaml',
-    sourceType: 'drive-file',
-    sourceFolder: 'API spec drop/YAML',
-    sourceFileId: 'seed-yaml-1',
-    sourceLink: 'https://drive.google.com/file/d/seed-yaml-1/view',
-    customer: 'TDC NET',
-    domain: 'Customer platform',
-    workflowStatus: 'triaged',
-    priority: 'high',
+    key: "seed-yaml-1",
+    title: "customer-address-api.yaml",
+    sourceType: "drive-file",
+    sourceFolder: "API spec drop/YAML",
+    sourceFileId: "seed-yaml-1",
+    sourceLink: "https://drive.google.com/file/d/seed-yaml-1/view",
+    customer: "TDC NET",
+    domain: "Customer platform",
+    workflowStatus: "triaged",
+    priority: "high",
   },
 ];
 
 const artifactsBySourceFileId = {
-  'seed-general-design-1': [
+  "seed-general-design-1": [
     {
-      artifactType: 'kiss_draft',
-      storageBackend: 'drive',
-      storagePath: 'KISS General designs/BPI - FAS MyView integration.md',
-      driveFileId: 'seed-kiss-1',
+      artifactType: "kiss_draft",
+      storageBackend: "drive",
+      storagePath: "KISS General designs/BPI - FAS MyView integration.md",
+      driveFileId: "seed-kiss-1",
       version: 1,
     },
   ],
-  'seed-yaml-1': [
+  "seed-yaml-1": [
     {
-      artifactType: 'openapi_yaml',
-      storageBackend: 'drive',
-      storagePath: 'API spec drop/YAML/customer-address-api.yaml',
-      driveFileId: 'seed-openapi-1',
+      artifactType: "openapi_yaml",
+      storageBackend: "drive",
+      storagePath: "API spec drop/YAML/customer-address-api.yaml",
+      driveFileId: "seed-openapi-1",
       version: 1,
     },
     {
-      artifactType: 'api_spec_pdf',
-      storageBackend: 'local',
-      storagePath: '.runtime/generated-pdfs/seed-yaml-1/customer-address-api-api-spec.pdf',
+      artifactType: "api_spec_pdf",
+      storageBackend: "local",
+      storagePath:
+        ".runtime/generated-pdfs/seed-yaml-1/customer-address-api-api-spec.pdf",
       driveFileId: null,
       version: 1,
     },
@@ -68,60 +69,63 @@ const artifactsBySourceFileId = {
 };
 
 const tasksBySourceFileId = {
-  'seed-general-design-1': [
+  "seed-general-design-1": [
     {
-      taskType: 'triage',
-      status: 'open',
-      payload: { title: 'Triage work item', expectedNextStatus: 'triaged' },
+      taskType: "triage",
+      status: "open",
+      payload: { title: "Triage work item", expectedNextStatus: "triaged" },
     },
   ],
-  'seed-yaml-1': [
+  "seed-yaml-1": [
     {
-      taskType: 'produce_artifacts',
-      status: 'open',
-      payload: { title: 'Produce working artifacts', expectedNextStatus: 'in_progress' },
+      taskType: "produce_artifacts",
+      status: "open",
+      payload: {
+        title: "Produce working artifacts",
+        expectedNextStatus: "in_progress",
+      },
     },
   ],
 };
 
 const auditEventsBySourceFileId = {
-  'seed-general-design-1': [
+  "seed-general-design-1": [
     {
-      eventType: 'intake_discovered',
-      actor: 'system',
-      payload: { source: 'General designs' },
+      eventType: "intake_discovered",
+      actor: "system",
+      payload: { source: "General designs" },
     },
   ],
-  'seed-yaml-1': [
+  "seed-yaml-1": [
     {
-      eventType: 'intake_discovered',
-      actor: 'system',
-      payload: { source: 'API spec drop/YAML' },
+      eventType: "intake_discovered",
+      actor: "system",
+      payload: { source: "API spec drop/YAML" },
     },
     {
-      eventType: 'pdf.rendered',
-      actor: 'pdf-renderer',
-      payload: { artifactType: 'api_spec_pdf', version: 1 },
+      eventType: "pdf.rendered",
+      actor: "pdf-renderer",
+      payload: { artifactType: "api_spec_pdf", version: 1 },
     },
   ],
 };
 
 const intakeSources = [
   {
-    sourceKey: 'general-designs',
-    sourceType: 'google-drive-folder',
-    displayName: 'General designs',
-    driveRootName: 'Data - NET',
-    driveFolderPath: 'General designs',
-    driveFolderId: '1jfj6EqzSsUsyA2_cz6ui2PeObZaTyanD',
+    sourceKey: "general-designs",
+    sourceType: "google-drive-folder",
+    displayName: "General designs",
+    driveRootName: "Data - NET",
+    driveFolderPath: "General designs",
+    driveFolderId: "1jfj6EqzSsUsyA2_cz6ui2PeObZaTyanD",
   },
   {
-    sourceKey: 'api-spec-drop-yaml',
-    sourceType: 'google-drive-folder',
-    displayName: 'API spec drop/YAML',
-    driveRootName: 'Data - NET',
-    driveFolderPath: 'API spec drop/YAML',
-    driveFolderId: '1iByXnVBDwuXwV34vdXD387oM2-zezN-K',
+    sourceKey: "api-spec-drop-yaml",
+    sourceType: "google-drive-folder",
+    displayName: "API spec drop/YAML",
+    driveRootName: "Data - NET",
+    driveFolderPath: "API spec drop/YAML",
+    driveFolderId: "1iByXnVBDwuXwV34vdXD387oM2-zezN-K",
   },
 ];
 
@@ -198,7 +202,9 @@ for (const item of items) {
   );
 }
 
-for (const [sourceFileId, artifacts] of Object.entries(artifactsBySourceFileId)) {
+for (const [sourceFileId, artifacts] of Object.entries(
+  artifactsBySourceFileId,
+)) {
   const workItemId = workItemIdsBySourceFileId.get(sourceFileId);
 
   if (!workItemId) continue;
@@ -271,12 +277,20 @@ for (const [sourceFileId, tasks] of Object.entries(tasksBySourceFileId)) {
         insert into tasks (id, work_item_id, task_type, status, payload_json)
         values ($1,$2,$3,$4,$5::jsonb)
       `,
-      [crypto.randomUUID(), workItemId, task.taskType, task.status, JSON.stringify(task.payload)],
+      [
+        crypto.randomUUID(),
+        workItemId,
+        task.taskType,
+        task.status,
+        JSON.stringify(task.payload),
+      ],
     );
   }
 }
 
-for (const [sourceFileId, events] of Object.entries(auditEventsBySourceFileId)) {
+for (const [sourceFileId, events] of Object.entries(
+  auditEventsBySourceFileId,
+)) {
   const workItemId = workItemIdsBySourceFileId.get(sourceFileId);
 
   if (!workItemId) continue;
@@ -299,10 +313,18 @@ for (const [sourceFileId, events] of Object.entries(auditEventsBySourceFileId)) 
         insert into audit_events (id, work_item_id, event_type, actor, payload_json)
         values ($1,$2,$3,$4,$5::jsonb)
       `,
-      [crypto.randomUUID(), workItemId, event.eventType, event.actor, JSON.stringify(event.payload)],
+      [
+        crypto.randomUUID(),
+        workItemId,
+        event.eventType,
+        event.actor,
+        JSON.stringify(event.payload),
+      ],
     );
   }
 }
 
-console.log(`seeded ${items.length} work item(s), artifact fixtures, and ${intakeSources.length} intake source(s)`);
+console.log(
+  `seeded ${items.length} work item(s), artifact fixtures, and ${intakeSources.length} intake source(s)`,
+);
 await pool.end();
